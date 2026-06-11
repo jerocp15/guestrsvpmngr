@@ -439,8 +439,12 @@ export default function GuestManagerApp() {
             <button className="gm-nav-btn" onClick={() => window.print()}>
               <span className="icon">🖨️</span> Print View
             </button>
+            <div className="gm-nav-label">Account</div>
+            <button className="gm-nav-btn" onClick={handleSignOut}>
+              <span className="icon">🚪</span> Sign Out
+            </button>
           </nav>
-          <div className="gm-sidebar-footer">Smart reservations · Local-first</div>
+          <div className="gm-sidebar-footer">Smart reservations · Cloud-synced</div>
         </aside>
 
         <div className="gm-main">
