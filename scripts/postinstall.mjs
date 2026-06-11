@@ -10,7 +10,7 @@
 // This script removes the stale optimize cache and asks the running dev server
 // to restart, so the next page load gets freshly optimized dependencies.
 
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, rmSync, readdirSync, readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
