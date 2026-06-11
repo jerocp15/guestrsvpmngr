@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   badgeClass,
   checkTableConflict,
@@ -115,16 +115,17 @@ export default function GuestManagerApp() {
     [reservations],
   );
 
-  const todayBadge = useMemo(
-    () =>
+  const [todayBadge, setTodayBadge] = useState("");
+  useEffect(() => {
+    setTodayBadge(
       new Date().toLocaleDateString("en-PH", {
         weekday: "short",
         year: "numeric",
         month: "short",
         day: "numeric",
       }),
-    [],
-  );
+    );
+  }, []);
 
   // ---------- modal helpers ----------
   function openCreate(type: ResType) {
