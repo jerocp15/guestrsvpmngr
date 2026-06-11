@@ -29,7 +29,9 @@ export default function AuthScreen() {
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        setNotice("Account created — you're all set. Signing you in…");
+        setNotice(
+          "Account created. If a confirmation email is required, check your inbox to finish signing in.",
+        );
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
