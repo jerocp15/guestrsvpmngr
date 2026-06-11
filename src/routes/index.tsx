@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import GuestManagerApp from "@/components/guest-manager/GuestManagerApp";
+import AuthGate from "@/components/auth/AuthGate";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,5 +23,9 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  return <GuestManagerApp />;
+  return (
+    <AuthGate>
+      <GuestManagerApp />
+    </AuthGate>
+  );
 }

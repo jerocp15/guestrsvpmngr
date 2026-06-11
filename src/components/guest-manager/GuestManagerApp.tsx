@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   badgeClass,
   checkTableConflict,
-  DEFAULT_RESERVATIONS,
   DEFAULT_STAFF,
   DEFAULT_TABLES,
   exportCSV,
@@ -21,7 +20,16 @@ import {
   type TableDef,
   type TableState,
 } from "@/lib/guest-manager";
-import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useRemoteCollection } from "@/hooks/use-remote-collection";
+import {
+  loadReservations,
+  loadStaff,
+  loadTables,
+  saveReservations,
+  saveStaff,
+  saveTables,
+} from "@/lib/guest-data";
+import { supabase } from "@/integrations/supabase/client";
 
 type Page = "dashboard" | "reservations" | "tablemap";
 
@@ -64,18 +72,28 @@ function typeBadge(t: ResType) {
 }
 
 export default function GuestManagerApp() {
-  const [reservations, setReservations] = useLocalStorage<Reservation[]>(
-    "rsvp_data",
-    DEFAULT_RESERVATIONS,
+  const [reservations, setReservations] = useRemoteCollection<Reservation[]>(
+    loadReservations,
+    saveReservations,
+    [],
+    true,
   );
-  const [tableList, setTableList] = useLocalStorage<TableDef[]>(
-    "table_list",
+  const [tableList, setTableList] = useRemoteCollection<TableDef[]>(
+    loadTables,
+    saveTables,
     DEFAULT_TABLES,
+    true,
   );
-  const [staffList, setStaffList] = useLocalStorage<string[]>(
-    "staff_list",
+  const [staffList, setStaffList] = useRemoteCollection<string[]>(
+    loadStaff,
+    saveStaff,
     DEFAULT_STAFF,
+    true,
   );
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+  }
 
   const [page, setPage] = useState<Page>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -421,8 +439,12 @@ export default function GuestManagerApp() {
             <button className="gm-nav-btn" onClick={() => window.print()}>
               <span className="icon">🖨️</span> Print View
             </button>
+            <div className="gm-nav-label">Account</div>
+            <button className="gm-nav-btn" onClick={handleSignOut}>
+              <span className="icon">🚪</span> Sign Out
+            </button>
           </nav>
-          <div className="gm-sidebar-footer">Smart reservations · Local-first</div>
+          <div className="gm-sidebar-footer">Smart reservations · Cloud-synced</div>
         </aside>
 
         <div className="gm-main">

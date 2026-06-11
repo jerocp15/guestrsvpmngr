@@ -298,3 +298,26 @@
 .gm-bar-track { flex: 1; height: 8px; background: var(--gm-border); border-radius: 10px; overflow: hidden; }
 .gm-bar-fill { height: 100%; border-radius: 10px; }
 .gm-bar-count { width: 24px; text-align: right; font-size: 12px; font-weight: 600; }
+
+/* ---------- Auth ---------- */
+.gm-auth { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(160deg, var(--navy) 0%, var(--navy-mid) 60%, var(--navy-soft) 100%); padding: 24px; }
+.gm-auth-loading { color: rgba(255,255,255,0.7); font-size: 15px; }
+.gm-auth-card { width: 100%; max-width: 420px; background: var(--gm-white); border-radius: 24px; padding: 36px 32px; box-shadow: 0 30px 60px -20px rgba(0,0,0,0.5); }
+.gm-auth-brand { text-align: center; margin-bottom: 22px; }
+.gm-auth-brand h1 { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--navy); }
+.gm-auth-brand p { font-size: 13px; color: var(--text-soft); margin-top: 4px; }
+.gm-auth-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 600; color: var(--navy); text-align: center; margin-bottom: 22px; }
+.gm-auth-google { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; border: 1px solid var(--gm-border); border-radius: 14px; background: var(--gm-white); color: var(--text-dark); font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+.gm-auth-google:hover:not(:disabled) { background: var(--cream); }
+.gm-auth-google:disabled { opacity: 0.6; cursor: not-allowed; }
+.gm-auth-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--text-soft); font-size: 12px; }
+.gm-auth-divider::before, .gm-auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--gm-border); }
+.gm-auth-form { display: flex; flex-direction: column; gap: 14px; }
+.gm-auth-label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-mid); }
+.gm-auth-label input { padding: 11px 14px; border: 1px solid var(--gm-border); border-radius: 12px; font-family: inherit; font-size: 15px; color: var(--text-dark); background: var(--gm-white); }
+.gm-auth-label input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-pale); }
+.gm-auth-submit { width: 100%; justify-content: center; padding: 12px; border-radius: 14px; font-size: 15px; margin-top: 4px; }
+.gm-auth-error { color: var(--cancelled-fg); background: var(--cancelled-bg); border-radius: 10px; padding: 9px 12px; font-size: 13px; }
+.gm-auth-notice { color: var(--confirmed-fg); background: var(--confirmed-bg); border-radius: 10px; padding: 9px 12px; font-size: 13px; }
+.gm-auth-toggle { text-align: center; margin-top: 20px; font-size: 14px; color: var(--text-mid); }
+.gm-auth-toggle button { background: none; border: none; color: var(--gold); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 0; }

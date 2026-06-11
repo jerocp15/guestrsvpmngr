@@ -14,7 +14,114 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      reservations: {
+        Row: {
+          arrival: string
+          created_at: string
+          date: string
+          id: string
+          name: string
+          notes: string
+          pax: number
+          phone: string
+          staff: string
+          status: string
+          table_name: string
+          time: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          arrival?: string
+          created_at?: string
+          date: string
+          id?: string
+          name: string
+          notes?: string
+          pax?: number
+          phone?: string
+          staff?: string
+          status?: string
+          table_name?: string
+          time?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          arrival?: string
+          created_at?: string
+          date?: string
+          id?: string
+          name?: string
+          notes?: string
+          pax?: number
+          phone?: string
+          staff?: string
+          status?: string
+          table_name?: string
+          time?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      restaurant_tables: {
+        Row: {
+          cap: number
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          override: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          cap?: number
+          created_at?: string
+          icon?: string
+          id?: string
+          name: string
+          override?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          cap?: number
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          override?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      staff: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
