@@ -21,7 +21,16 @@ import {
   type TableDef,
   type TableState,
 } from "@/lib/guest-manager";
-import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useRemoteCollection } from "@/hooks/use-remote-collection";
+import {
+  loadReservations,
+  loadStaff,
+  loadTables,
+  saveReservations,
+  saveStaff,
+  saveTables,
+} from "@/lib/guest-data";
+import { supabase } from "@/integrations/supabase/client";
 
 type Page = "dashboard" | "reservations" | "tablemap";
 
@@ -64,18 +73,28 @@ function typeBadge(t: ResType) {
 }
 
 export default function GuestManagerApp() {
-  const [reservations, setReservations] = useLocalStorage<Reservation[]>(
-    "rsvp_data",
-    DEFAULT_RESERVATIONS,
+  const [reservations, setReservations] = useRemoteCollection<Reservation[]>(
+    loadReservations,
+    saveReservations,
+    [],
+    true,
   );
-  const [tableList, setTableList] = useLocalStorage<TableDef[]>(
-    "table_list",
+  const [tableList, setTableList] = useRemoteCollection<TableDef[]>(
+    loadTables,
+    saveTables,
     DEFAULT_TABLES,
+    true,
   );
-  const [staffList, setStaffList] = useLocalStorage<string[]>(
-    "staff_list",
+  const [staffList, setStaffList] = useRemoteCollection<string[]>(
+    loadStaff,
+    saveStaff,
     DEFAULT_STAFF,
+    true,
   );
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+  }
 
   const [page, setPage] = useState<Page>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
