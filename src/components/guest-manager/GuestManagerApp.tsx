@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   badgeClass,
   checkTableConflict,
-  DEFAULT_RESERVATIONS,
   DEFAULT_STAFF,
   DEFAULT_TABLES,
   exportCSV,
