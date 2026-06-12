@@ -396,7 +396,7 @@ export default function GuestManagerApp() {
         )}
         <aside className={`gm-sidebar${sidebarOpen ? " open" : ""}`}>
           <div className="gm-sidebar-logo">
-            <h1>Guest Manager</h1>
+            <h1>Reservation Management</h1>
             <p>Staff + Table Map</p>
           </div>
           <nav className="gm-sidebar-nav">
