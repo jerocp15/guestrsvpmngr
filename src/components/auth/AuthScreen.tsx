@@ -69,7 +69,7 @@ export default function AuthScreen() {
     <div className="gm gm-auth">
       <div className="gm-auth-card">
         <div className="gm-auth-brand">
-          <h1>Guest Manager</h1>
+          <h1>Reservation Management</h1>
           <p>Smart restaurant reservations</p>
         </div>
 
@@ -132,7 +132,7 @@ export default function AuthScreen() {
 
         <p className="gm-auth-toggle">
           {mode === "signin"
-            ? "New to Guest Manager?"
+            ? "New to Reservation Management?"
             : "Already have an account?"}{" "}
           <button
             type="button"
