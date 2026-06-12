@@ -65,7 +65,7 @@ export const DEFAULT_STAFF: string[] = [
   "Donna Sy",
 ];
 
-export const TABLE_ICONS = ["🪑", "🚪", "🍹", "🎉", "🌿"];
+export const TABLE_ICONS = ["🔥", "💧", "🍹", "🪑", "🛋️"];
 
 /** Today's date in YYYY-MM-DD, or the demo date if no reservation matches today. */
 export function getToday(reservations: Reservation[]): string {
