@@ -50,12 +50,12 @@ export const DEFAULT_TABLES: TableDef[] = [
   { name: "Table 1", cap: 2, icon: "🪑", override: "" },
   { name: "Table 2", cap: 2, icon: "🪑", override: "" },
   { name: "Table 3", cap: 4, icon: "🪑", override: "" },
-  { name: "Table 4", cap: 4, icon: "🪑", override: "" },
-  { name: "Table 5", cap: 4, icon: "🪑", override: "" },
-  { name: "Table 6", cap: 6, icon: "🪑", override: "" },
-  { name: "Private Room", cap: 12, icon: "🚪", override: "" },
+  { name: "Table 4", cap: 4, icon: "🛋️", override: "" },
+  { name: "Table 5", cap: 4, icon: "🛋️", override: "" },
+  { name: "Table 6", cap: 6, icon: "🔥", override: "" },
+  { name: "Private Room", cap: 12, icon: "💧", override: "" },
   { name: "Bar Area", cap: 8, icon: "🍹", override: "" },
-  { name: "Event Hall", cap: 50, icon: "🎉", override: "" },
+  { name: "Event Hall", cap: 50, icon: "🔥", override: "" },
 ];
 
 export const DEFAULT_STAFF: string[] = [
