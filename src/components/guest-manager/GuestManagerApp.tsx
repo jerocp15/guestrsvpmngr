@@ -136,7 +136,7 @@ export default function GuestManagerApp() {
   const [todayBadge, setTodayBadge] = useState("");
   useEffect(() => {
     setTodayBadge(
-      new Date().toLocaleDateString("en-PH", {
+      new Date().toLocaleDateString(undefined, {
         weekday: "short",
         year: "numeric",
         month: "short",
