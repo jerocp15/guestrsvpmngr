@@ -468,7 +468,7 @@ export default function GuestManagerApp() {
               >
                 ☰
               </button>
-              <h2>{pageTitle}</h2>
+              <h2>{greeting ? `${greeting} · ${pageTitle}` : pageTitle}</h2>
               <span className="gm-date-badge">{todayBadge}</span>
             </div>
             <div className="gm-topbar-right">
