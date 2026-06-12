@@ -180,7 +180,7 @@ export function exportCSV(reservations: Reservation[]) {
   const blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: "text/csv" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `reservations_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `reservations_${localDate()}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
