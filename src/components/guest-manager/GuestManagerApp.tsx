@@ -134,15 +134,26 @@ export default function GuestManagerApp() {
   );
 
   const [todayBadge, setTodayBadge] = useState("");
+  const [greeting, setGreeting] = useState("");
   useEffect(() => {
-    setTodayBadge(
-      new Date().toLocaleDateString(undefined, {
-        weekday: "short",
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      }),
-    );
+    const update = () => {
+      const now = new Date();
+      setTodayBadge(
+        now.toLocaleDateString(undefined, {
+          weekday: "short",
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        }),
+      );
+      const h = now.getHours();
+      setGreeting(
+        h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening",
+      );
+    };
+    update();
+    const id = setInterval(update, 60_000);
+    return () => clearInterval(id);
   }, []);
 
   // ---------- modal helpers ----------
@@ -457,7 +468,7 @@ export default function GuestManagerApp() {
               >
                 ☰
               </button>
-              <h2>{pageTitle}</h2>
+              <h2>{greeting ? `${greeting} · ${pageTitle}` : pageTitle}</h2>
               <span className="gm-date-badge">{todayBadge}</span>
             </div>
             <div className="gm-topbar-right">
