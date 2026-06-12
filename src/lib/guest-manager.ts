@@ -67,9 +67,17 @@ export const DEFAULT_STAFF: string[] = [
 
 export const TABLE_ICONS = ["🔥", "💧", "🍹", "🪑", "🛋️"];
 
+/** Local date as YYYY-MM-DD in the user's current timezone. */
+export function localDate(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = (d.getMonth() + 1).toString().padStart(2, "0");
+  const day = d.getDate().toString().padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 /** Today's date in YYYY-MM-DD, or the demo date if no reservation matches today. */
 export function getToday(reservations: Reservation[]): string {
-  const t = new Date().toISOString().slice(0, 10);
+  const t = localDate();
   return reservations.some((r) => r.date === t) ? t : "2025-07-15";
 }
 
@@ -172,7 +180,7 @@ export function exportCSV(reservations: Reservation[]) {
   const blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: "text/csv" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `reservations_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `reservations_${localDate()}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
