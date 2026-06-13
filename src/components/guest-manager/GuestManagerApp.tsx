@@ -114,7 +114,7 @@ export default function GuestManagerApp() {
     [reservations, today],
   );
   const [mapDate, setMapDate] = useState("");
-  const effectiveMapDate = mapDate || today;
+  const effectiveMapDate = mapDate || localDate();
 
   // modals
   const [form, setForm] = useState<FormState>(emptyForm);
