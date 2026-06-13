@@ -7,6 +7,7 @@ import {
   exportCSV,
   getTableState,
   getToday,
+  localDate,
   STATE_CLASS,
   STATE_LABEL,
   STATUSES,
