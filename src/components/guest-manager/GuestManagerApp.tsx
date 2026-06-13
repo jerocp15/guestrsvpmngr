@@ -157,7 +157,7 @@ export default function GuestManagerApp() {
       ...emptyForm,
       open: true,
       type,
-      date: today,
+      date: latestDate,
       status: type === "Walk-In" ? "Seated" : "Confirmed",
     });
     setSidebarOpen(false);
