@@ -7,6 +7,7 @@ import {
   exportCSV,
   getTableState,
   getToday,
+  localDate,
   STATE_CLASS,
   STATE_LABEL,
   STATUSES,
@@ -157,7 +158,7 @@ export default function GuestManagerApp() {
       ...emptyForm,
       open: true,
       type,
-      date: latestDate,
+      date: localDate(),
       status: type === "Walk-In" ? "Seated" : "Confirmed",
     });
     setSidebarOpen(false);
