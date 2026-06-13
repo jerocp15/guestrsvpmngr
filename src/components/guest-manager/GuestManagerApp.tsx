@@ -106,6 +106,12 @@ export default function GuestManagerApp() {
   const [fStatus, setFStatus] = useState("");
 
   const today = getToday(reservations);
+  // Latest date present in reservations (falls back to today for new accounts).
+  const latestDate = useMemo(
+    () =>
+      reservations.reduce((max, r) => (r.date > max ? r.date : max), today),
+    [reservations, today],
+  );
   const [mapDate, setMapDate] = useState("");
   const effectiveMapDate = mapDate || today;
 
@@ -151,7 +157,7 @@ export default function GuestManagerApp() {
       ...emptyForm,
       open: true,
       type,
-      date: today,
+      date: latestDate,
       status: type === "Walk-In" ? "Seated" : "Confirmed",
     });
     setSidebarOpen(false);

@@ -30,6 +30,7 @@ export type Database = {
           time: string
           type: string
           updated_at: string
+          user_id: string
         }
         Insert: {
           arrival?: string
@@ -46,6 +47,7 @@ export type Database = {
           time?: string
           type?: string
           updated_at?: string
+          user_id?: string
         }
         Update: {
           arrival?: string
@@ -62,6 +64,7 @@ export type Database = {
           time?: string
           type?: string
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -75,6 +78,7 @@ export type Database = {
           override: string
           sort_order: number
           updated_at: string
+          user_id: string
         }
         Insert: {
           cap?: number
@@ -85,6 +89,7 @@ export type Database = {
           override?: string
           sort_order?: number
           updated_at?: string
+          user_id?: string
         }
         Update: {
           cap?: number
@@ -95,6 +100,7 @@ export type Database = {
           override?: string
           sort_order?: number
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -105,6 +111,7 @@ export type Database = {
           name: string
           sort_order: number
           updated_at: string
+          user_id: string
         }
         Insert: {
           created_at?: string
@@ -112,6 +119,7 @@ export type Database = {
           name: string
           sort_order?: number
           updated_at?: string
+          user_id?: string
         }
         Update: {
           created_at?: string
@@ -119,6 +127,7 @@ export type Database = {
           name?: string
           sort_order?: number
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
