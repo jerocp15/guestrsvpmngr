@@ -251,6 +251,59 @@ export default function GuestManagerApp() {
     showToast("Deleted");
   }
 
+  // ---------- arrival / departure toggles ----------
+  function toggleArrived(id: number) {
+    setReservations((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        if (r.arrival) {
+          return { ...r, arrival: "", departure: "" };
+        }
+        return { ...r, arrival: to12h(localTime()), status: "Seated" };
+      }),
+    );
+  }
+
+  function toggleDeparted(id: number) {
+    setReservations((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        if (r.departure) {
+          return { ...r, departure: "" };
+        }
+        return {
+          ...r,
+          arrival: r.arrival || to12h(localTime()),
+          departure: to12h(localTime()),
+        };
+      }),
+    );
+  }
+
+  function ArriveDepartToggle({ r }: { r: Reservation }) {
+    return (
+      <div style={{ display: "inline-flex", gap: 4, whiteSpace: "nowrap" }}>
+        <button
+          type="button"
+          className={`gm-toggle-pill${r.arrival ? " on-arrived" : ""}`}
+          title={r.arrival ? `Arrived ${r.arrival}` : "Mark arrived"}
+          onClick={() => toggleArrived(r.id)}
+        >
+          ✅ {r.arrival ? "Arrived" : "Arrive"}
+        </button>
+        <button
+          type="button"
+          className={`gm-toggle-pill${r.departure ? " on-departed" : ""}`}
+          title={r.departure ? `Departed ${r.departure}` : "Mark departed"}
+          onClick={() => toggleDeparted(r.id)}
+        >
+          🚪 {r.departure ? "Departed" : "Depart"}
+        </button>
+      </div>
+    );
+  }
+
+
   // ---------- staff ----------
   function addStaff() {
     const name = newStaff.trim();
