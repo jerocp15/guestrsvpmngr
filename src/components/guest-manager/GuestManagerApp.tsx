@@ -162,6 +162,7 @@ export default function GuestManagerApp() {
       open: true,
       type,
       date: localDate(),
+      time: localTime(),
       status: type === "Walk-In" ? "Seated" : "Confirmed",
     });
     setSidebarOpen(false);
@@ -176,6 +177,7 @@ export default function GuestManagerApp() {
       type: r.type,
       name: r.name,
       phone: r.phone,
+      email: r.email,
       date: r.date,
       time: to24h(r.time),
       pax: r.pax,
@@ -215,10 +217,14 @@ export default function GuestManagerApp() {
     }
     const name =
       form.name.trim() || (form.type === "Walk-In" ? "Walk-in Guest" : "");
+    const existing = form.editId
+      ? reservations.find((r) => r.id === form.editId)
+      : null;
     const entry: Reservation = {
       id: form.editId ?? nextId,
       name,
       phone: form.phone.trim(),
+      email: form.email.trim(),
       type: form.type,
       date: form.date,
       time: to12h(form.time),
@@ -227,7 +233,8 @@ export default function GuestManagerApp() {
       status: form.status,
       notes: form.notes,
       staff: form.staff,
-      arrival: "",
+      arrival: existing?.arrival ?? "",
+      departure: existing?.departure ?? "",
     };
     setReservations((prev) =>
       form.editId
