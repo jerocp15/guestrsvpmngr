@@ -49,6 +49,7 @@ export async function saveReservations(list: Reservation[]): Promise<void> {
     list.map((r) => ({
       name: r.name,
       phone: r.phone,
+      email: r.email,
       type: r.type,
       date: r.date,
       time: r.time,
@@ -58,6 +59,7 @@ export async function saveReservations(list: Reservation[]): Promise<void> {
       notes: r.notes,
       staff: r.staff,
       arrival: r.arrival,
+      departure: r.departure,
     })),
   );
   if (error) throw error;
