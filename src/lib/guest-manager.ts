@@ -10,6 +10,7 @@ export interface Reservation {
   id: number;
   name: string;
   phone: string;
+  email: string;
   type: ResType;
   date: string;
   time: string;
@@ -19,6 +20,7 @@ export interface Reservation {
   notes: string;
   staff: string;
   arrival: string;
+  departure: string;
 }
 
 export interface TableDef {
