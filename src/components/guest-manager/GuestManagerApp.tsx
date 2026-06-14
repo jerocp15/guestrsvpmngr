@@ -652,13 +652,14 @@ export default function GuestManagerApp() {
                         <th>Pax</th>
                         <th>Table</th>
                         <th>Status</th>
+                        <th>Arrival / Departure</th>
                         <th>Notes</th>
                       </tr>
                     </thead>
                     <tbody>
                       {todayRows.length === 0 ? (
                         <tr>
-                          <td colSpan={7} style={{ textAlign: "center", padding: 32 }}>
+                          <td colSpan={8} style={{ textAlign: "center", padding: 32 }}>
                             No entries today
                           </td>
                         </tr>
@@ -678,6 +679,9 @@ export default function GuestManagerApp() {
                               <span className={badgeClass(r.status)}>
                                 {statusIcon(r.status)} {r.status}
                               </span>
+                            </td>
+                            <td>
+                              <ArriveDepartToggle r={r} />
                             </td>
                             <td style={{ maxWidth: 180 }}>{r.notes || "—"}</td>
                           </tr>
