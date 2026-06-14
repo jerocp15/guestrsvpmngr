@@ -575,7 +575,6 @@ export default function GuestManagerApp() {
           {/* ---------- DASHBOARD ---------- */}
           {page === "dashboard" && (
             <div className="gm-page">
-              <p className="display gm-heading">Good evening 👋</p>
               <p style={{ color: "var(--text-soft)", marginBottom: 24 }}>
                 Today's snapshot
               </p>
