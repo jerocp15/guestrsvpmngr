@@ -759,12 +759,14 @@ export default function GuestManagerApp() {
                         <th>#</th>
                         <th>Name</th>
                         <th>Phone</th>
+                        <th>Email</th>
                         <th>Type</th>
                         <th>Date</th>
                         <th>Time</th>
                         <th>Pax</th>
                         <th>Table</th>
                         <th>Status</th>
+                        <th>Arrival / Departure</th>
                         <th>Staff</th>
                         <th>Notes</th>
                         <th>Actions</th>
@@ -773,7 +775,7 @@ export default function GuestManagerApp() {
                     <tbody>
                       {filtered.length === 0 ? (
                         <tr>
-                          <td colSpan={12} style={{ textAlign: "center", padding: 32 }}>
+                          <td colSpan={14} style={{ textAlign: "center", padding: 32 }}>
                             No matching records
                           </td>
                         </tr>
@@ -785,6 +787,7 @@ export default function GuestManagerApp() {
                               <b>{r.name}</b>
                             </td>
                             <td>{r.phone || "—"}</td>
+                            <td>{r.email || "—"}</td>
                             <td>{typeBadge(r.type)}</td>
                             <td>{r.date}</td>
                             <td>{r.time}</td>
@@ -794,6 +797,9 @@ export default function GuestManagerApp() {
                               <span className={badgeClass(r.status)}>
                                 {statusIcon(r.status)} {r.status}
                               </span>
+                            </td>
+                            <td>
+                              <ArriveDepartToggle r={r} />
                             </td>
                             <td>{r.staff || "—"}</td>
                             <td style={{ maxWidth: 140 }}>{r.notes || "—"}</td>
