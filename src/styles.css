@@ -290,6 +290,13 @@
 .gm-icon-btn-edit { background: #eff6ff; color: #2563eb; }
 .gm-icon-btn-del { background: #fef2f2; color: #dc2626; }
 
+.gm-toggle-pill { border: 1px solid var(--gm-border); background: white; color: var(--text-soft); padding: 5px 10px; border-radius: 40px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s ease; }
+.gm-toggle-pill:hover { border-color: var(--gold); }
+.gm-toggle-pill.on-arrived { background: #ecfdf5; border-color: #10b981; color: #047857; }
+.gm-toggle-pill.on-departed { background: #eef2ff; border-color: #6366f1; color: #4338ca; }
+
+
+
 /* ---------- TOAST + BARS ---------- */
 .gm-toast { position: fixed; bottom: 28px; right: 28px; background: var(--navy); color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 500; box-shadow: var(--shadow-lg); z-index: 2100; animation: gmToastIn 0.25s ease; }
 @keyframes gmToastIn { from { transform: translateY(80px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
