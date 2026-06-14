@@ -402,7 +402,7 @@ export default function GuestManagerApp() {
       (!fType || r.type === fType) &&
       (!fStatus || r.status === fStatus) &&
       (!q ||
-        [r.name, r.phone, r.notes, r.table, r.staff]
+        [r.name, r.phone, r.email, r.notes, r.table, r.staff]
           .join(" ")
           .toLowerCase()
           .includes(q))
