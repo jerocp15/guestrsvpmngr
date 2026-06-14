@@ -1040,8 +1040,10 @@ export default function GuestManagerApp() {
                     onChange={(e) => setForm((f) => ({ ...f, table: e.target.value }))}
                   >
                     <option value="">-- Select --</option>
-                    {tableList.map((t) => (
-                      <option key={t.name}>{t.name}</option>
+                    {availableTables.map((t) => (
+                      <option key={t.name}>
+                        {t.name} · seats {t.cap}
+                      </option>
                     ))}
                   </select>
                 </div>
