@@ -8,6 +8,7 @@ import {
   getTableState,
   getToday,
   localDate,
+  localTime,
   STATE_CLASS,
   STATE_LABEL,
   STATUSES,
