@@ -420,15 +420,44 @@ export default function GuestManagerApp() {
     mapCounts[getTableState(t, reservations, effectiveMapDate)]++;
   });
 
-  // repeat guest + conflict (modal)
+  // repeat guest (matched by email or phone) + conflict (modal)
   const repeatGuest = useMemo(() => {
+    const email = form.email.trim().toLowerCase();
     const phone = form.phone.trim();
-    if (!phone) return null;
+    if (!email && !phone) return null;
     const matches = reservations
-      .filter((r) => r.phone && r.phone.trim() === phone && r.id !== form.editId)
+      .filter(
+        (r) =>
+          r.id !== form.editId &&
+          ((email && r.email && r.email.trim().toLowerCase() === email) ||
+            (phone && r.phone && r.phone.trim() === phone)),
+      )
       .sort((a, b) => +new Date(b.date) - +new Date(a.date));
     return matches[0] ?? null;
-  }, [form.phone, form.editId, reservations]);
+  }, [form.email, form.phone, form.editId, reservations]);
+
+  // how many past visits this guest has (by email or phone)
+  const repeatVisitCount = useMemo(() => {
+    const email = form.email.trim().toLowerCase();
+    const phone = form.phone.trim();
+    if (!email && !phone) return 0;
+    return reservations.filter(
+      (r) =>
+        r.id !== form.editId &&
+        ((email && r.email && r.email.trim().toLowerCase() === email) ||
+          (phone && r.phone && r.phone.trim() === phone)),
+    ).length;
+  }, [form.email, form.phone, form.editId, reservations]);
+
+  // tables available on the selected date (hide reserved/occupied/unavailable)
+  const availableTables = useMemo(() => {
+    const day = form.date || localDate();
+    return tableList.filter(
+      (t) =>
+        t.name === form.table ||
+        getTableState(t, reservations, day) === "available",
+    );
+  }, [tableList, reservations, form.date, form.table]);
 
   const conflict = checkTableConflict(
     reservations,
@@ -441,10 +470,13 @@ export default function GuestManagerApp() {
     setForm((f) => ({
       ...f,
       name: f.name.trim() || g.name,
+      phone: f.phone.trim() || g.phone,
+      email: f.email.trim() || g.email,
       notes: f.notes.trim() || g.notes,
     }));
     showToast(`Loaded ${g.name}`);
   }
+
 
   const navItems: { id: Page; icon: string; label: string }[] = [
     { id: "dashboard", icon: "📊", label: "Dashboard" },
