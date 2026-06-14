@@ -41,6 +41,7 @@ interface FormState {
   type: ResType;
   name: string;
   phone: string;
+  email: string;
   date: string;
   time: string;
   pax: number;
@@ -56,6 +57,7 @@ const emptyForm: FormState = {
   type: "Reservation",
   name: "",
   phone: "",
+  email: "",
   date: "",
   time: "19:00",
   pax: 2,
