@@ -77,6 +77,13 @@ export function localDate(d: Date = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
+/** Local time as HH:MM (24h) in the user's current timezone. */
+export function localTime(d: Date = new Date()): string {
+  const h = d.getHours().toString().padStart(2, "0");
+  const m = d.getMinutes().toString().padStart(2, "0");
+  return `${h}:${m}`;
+}
+
 /** Today's date in YYYY-MM-DD, or the demo date if no reservation matches today. */
 export function getToday(reservations: Reservation[]): string {
   const t = localDate();
