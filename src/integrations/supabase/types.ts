@@ -19,6 +19,8 @@ export type Database = {
           arrival: string
           created_at: string
           date: string
+          departure: string
+          email: string
           id: string
           name: string
           notes: string
@@ -36,6 +38,8 @@ export type Database = {
           arrival?: string
           created_at?: string
           date: string
+          departure?: string
+          email?: string
           id?: string
           name: string
           notes?: string
@@ -53,6 +57,8 @@ export type Database = {
           arrival?: string
           created_at?: string
           date?: string
+          departure?: string
+          email?: string
           id?: string
           name?: string
           notes?: string

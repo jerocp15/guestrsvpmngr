@@ -1,0 +1,3 @@
+ALTER TABLE public.reservations
+  ADD COLUMN IF NOT EXISTS email text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS departure text NOT NULL DEFAULT '';
