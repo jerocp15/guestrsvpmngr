@@ -10,6 +10,7 @@ export interface Reservation {
   id: number;
   name: string;
   phone: string;
+  email: string;
   type: ResType;
   date: string;
   time: string;
@@ -19,6 +20,7 @@ export interface Reservation {
   notes: string;
   staff: string;
   arrival: string;
+  departure: string;
 }
 
 export interface TableDef {
@@ -40,10 +42,10 @@ export const STATUSES: ResStatus[] = [
 ];
 
 export const DEFAULT_RESERVATIONS: Reservation[] = [
-  { id: 1, name: "Maria Santos", phone: "+63 912 345 6789", type: "Reservation", date: "2025-07-15", time: "07:00 PM", pax: 4, table: "Table 5", status: "Confirmed", notes: "Birthday cake", staff: "Ana Cruz", arrival: "" },
-  { id: 2, name: "Juan dela Cruz", phone: "+63 917 654 3210", type: "Reservation", date: "2025-07-15", time: "07:30 PM", pax: 2, table: "Table 2", status: "Confirmed", notes: "Anniversary", staff: "Ben Reyes", arrival: "" },
-  { id: 3, name: "Walk-in Guest", phone: "", type: "Walk-In", date: "2025-07-15", time: "06:45 PM", pax: 6, table: "Table 8", status: "Seated", notes: "High chair", staff: "Ana Cruz", arrival: "06:47 PM" },
-  { id: 4, name: "Sarah Lee", phone: "+63 999 111 2233", type: "Reservation", date: "2025-07-16", time: "12:00 PM", pax: 3, table: "Private Room", status: "Confirmed", notes: "Nut allergy", staff: "Carlo Diaz", arrival: "" },
+  { id: 1, name: "Maria Santos", phone: "+63 912 345 6789", email: "maria@example.com", type: "Reservation", date: "2025-07-15", time: "07:00 PM", pax: 4, table: "Table 5", status: "Confirmed", notes: "Birthday cake", staff: "Ana Cruz", arrival: "", departure: "" },
+  { id: 2, name: "Juan dela Cruz", phone: "+63 917 654 3210", email: "juan@example.com", type: "Reservation", date: "2025-07-15", time: "07:30 PM", pax: 2, table: "Table 2", status: "Confirmed", notes: "Anniversary", staff: "Ben Reyes", arrival: "", departure: "" },
+  { id: 3, name: "Walk-in Guest", phone: "", email: "", type: "Walk-In", date: "2025-07-15", time: "06:45 PM", pax: 6, table: "Table 8", status: "Seated", notes: "High chair", staff: "Ana Cruz", arrival: "06:47 PM", departure: "" },
+  { id: 4, name: "Sarah Lee", phone: "+63 999 111 2233", email: "sarah@example.com", type: "Reservation", date: "2025-07-16", time: "12:00 PM", pax: 3, table: "Private Room", status: "Confirmed", notes: "Nut allergy", staff: "Carlo Diaz", arrival: "", departure: "" },
 ];
 
 export const DEFAULT_TABLES: TableDef[] = [
@@ -73,6 +75,13 @@ export function localDate(d: Date = new Date()): string {
   const m = (d.getMonth() + 1).toString().padStart(2, "0");
   const day = d.getDate().toString().padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+/** Local time as HH:MM (24h) in the user's current timezone. */
+export function localTime(d: Date = new Date()): string {
+  const h = d.getHours().toString().padStart(2, "0");
+  const m = d.getMinutes().toString().padStart(2, "0");
+  return `${h}:${m}`;
 }
 
 /** Today's date in YYYY-MM-DD, or the demo date if no reservation matches today. */

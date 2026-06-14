@@ -24,6 +24,7 @@ export async function loadReservations(): Promise<Reservation[]> {
     id: i + 1,
     name: r.name,
     phone: r.phone,
+    email: r.email,
     type: r.type as ResType,
     date: r.date,
     time: r.time,
@@ -33,6 +34,7 @@ export async function loadReservations(): Promise<Reservation[]> {
     notes: r.notes,
     staff: r.staff,
     arrival: r.arrival,
+    departure: r.departure,
   }));
 }
 
@@ -47,6 +49,7 @@ export async function saveReservations(list: Reservation[]): Promise<void> {
     list.map((r) => ({
       name: r.name,
       phone: r.phone,
+      email: r.email,
       type: r.type,
       date: r.date,
       time: r.time,
@@ -56,6 +59,7 @@ export async function saveReservations(list: Reservation[]): Promise<void> {
       notes: r.notes,
       staff: r.staff,
       arrival: r.arrival,
+      departure: r.departure,
     })),
   );
   if (error) throw error;

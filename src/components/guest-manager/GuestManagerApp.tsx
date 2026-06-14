@@ -8,6 +8,7 @@ import {
   getTableState,
   getToday,
   localDate,
+  localTime,
   STATE_CLASS,
   STATE_LABEL,
   STATUSES,
@@ -40,6 +41,7 @@ interface FormState {
   type: ResType;
   name: string;
   phone: string;
+  email: string;
   date: string;
   time: string;
   pax: number;
@@ -55,6 +57,7 @@ const emptyForm: FormState = {
   type: "Reservation",
   name: "",
   phone: "",
+  email: "",
   date: "",
   time: "19:00",
   pax: 2,
@@ -159,6 +162,7 @@ export default function GuestManagerApp() {
       open: true,
       type,
       date: localDate(),
+      time: localTime(),
       status: type === "Walk-In" ? "Seated" : "Confirmed",
     });
     setSidebarOpen(false);
@@ -173,6 +177,7 @@ export default function GuestManagerApp() {
       type: r.type,
       name: r.name,
       phone: r.phone,
+      email: r.email,
       date: r.date,
       time: to24h(r.time),
       pax: r.pax,
@@ -212,10 +217,14 @@ export default function GuestManagerApp() {
     }
     const name =
       form.name.trim() || (form.type === "Walk-In" ? "Walk-in Guest" : "");
+    const existing = form.editId
+      ? reservations.find((r) => r.id === form.editId)
+      : null;
     const entry: Reservation = {
       id: form.editId ?? nextId,
       name,
       phone: form.phone.trim(),
+      email: form.email.trim(),
       type: form.type,
       date: form.date,
       time: to12h(form.time),
@@ -224,7 +233,8 @@ export default function GuestManagerApp() {
       status: form.status,
       notes: form.notes,
       staff: form.staff,
-      arrival: "",
+      arrival: existing?.arrival ?? "",
+      departure: existing?.departure ?? "",
     };
     setReservations((prev) =>
       form.editId
@@ -240,6 +250,59 @@ export default function GuestManagerApp() {
     setReservations((prev) => prev.filter((r) => r.id !== id));
     showToast("Deleted");
   }
+
+  // ---------- arrival / departure toggles ----------
+  function toggleArrived(id: number) {
+    setReservations((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        if (r.arrival) {
+          return { ...r, arrival: "", departure: "" };
+        }
+        return { ...r, arrival: to12h(localTime()), status: "Seated" };
+      }),
+    );
+  }
+
+  function toggleDeparted(id: number) {
+    setReservations((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        if (r.departure) {
+          return { ...r, departure: "" };
+        }
+        return {
+          ...r,
+          arrival: r.arrival || to12h(localTime()),
+          departure: to12h(localTime()),
+        };
+      }),
+    );
+  }
+
+  function ArriveDepartToggle({ r }: { r: Reservation }) {
+    return (
+      <div style={{ display: "inline-flex", gap: 4, whiteSpace: "nowrap" }}>
+        <button
+          type="button"
+          className={`gm-toggle-pill${r.arrival ? " on-arrived" : ""}`}
+          title={r.arrival ? `Arrived ${r.arrival}` : "Mark arrived"}
+          onClick={() => toggleArrived(r.id)}
+        >
+          ✅ {r.arrival ? "Arrived" : "Arrive"}
+        </button>
+        <button
+          type="button"
+          className={`gm-toggle-pill${r.departure ? " on-departed" : ""}`}
+          title={r.departure ? `Departed ${r.departure}` : "Mark departed"}
+          onClick={() => toggleDeparted(r.id)}
+        >
+          🚪 {r.departure ? "Departed" : "Depart"}
+        </button>
+      </div>
+    );
+  }
+
 
   // ---------- staff ----------
   function addStaff() {
@@ -339,7 +402,7 @@ export default function GuestManagerApp() {
       (!fType || r.type === fType) &&
       (!fStatus || r.status === fStatus) &&
       (!q ||
-        [r.name, r.phone, r.notes, r.table, r.staff]
+        [r.name, r.phone, r.email, r.notes, r.table, r.staff]
           .join(" ")
           .toLowerCase()
           .includes(q))
@@ -357,15 +420,44 @@ export default function GuestManagerApp() {
     mapCounts[getTableState(t, reservations, effectiveMapDate)]++;
   });
 
-  // repeat guest + conflict (modal)
+  // repeat guest (matched by email or phone) + conflict (modal)
   const repeatGuest = useMemo(() => {
+    const email = form.email.trim().toLowerCase();
     const phone = form.phone.trim();
-    if (!phone) return null;
+    if (!email && !phone) return null;
     const matches = reservations
-      .filter((r) => r.phone && r.phone.trim() === phone && r.id !== form.editId)
+      .filter(
+        (r) =>
+          r.id !== form.editId &&
+          ((email && r.email && r.email.trim().toLowerCase() === email) ||
+            (phone && r.phone && r.phone.trim() === phone)),
+      )
       .sort((a, b) => +new Date(b.date) - +new Date(a.date));
     return matches[0] ?? null;
-  }, [form.phone, form.editId, reservations]);
+  }, [form.email, form.phone, form.editId, reservations]);
+
+  // how many past visits this guest has (by email or phone)
+  const repeatVisitCount = useMemo(() => {
+    const email = form.email.trim().toLowerCase();
+    const phone = form.phone.trim();
+    if (!email && !phone) return 0;
+    return reservations.filter(
+      (r) =>
+        r.id !== form.editId &&
+        ((email && r.email && r.email.trim().toLowerCase() === email) ||
+          (phone && r.phone && r.phone.trim() === phone)),
+    ).length;
+  }, [form.email, form.phone, form.editId, reservations]);
+
+  // tables available on the selected date (hide reserved/occupied/unavailable)
+  const availableTables = useMemo(() => {
+    const day = form.date || localDate();
+    return tableList.filter(
+      (t) =>
+        t.name === form.table ||
+        getTableState(t, reservations, day) === "available",
+    );
+  }, [tableList, reservations, form.date, form.table]);
 
   const conflict = checkTableConflict(
     reservations,
@@ -378,10 +470,13 @@ export default function GuestManagerApp() {
     setForm((f) => ({
       ...f,
       name: f.name.trim() || g.name,
+      phone: f.phone.trim() || g.phone,
+      email: f.email.trim() || g.email,
       notes: f.notes.trim() || g.notes,
     }));
     showToast(`Loaded ${g.name}`);
   }
+
 
   const navItems: { id: Page; icon: string; label: string }[] = [
     { id: "dashboard", icon: "📊", label: "Dashboard" },
@@ -480,7 +575,6 @@ export default function GuestManagerApp() {
           {/* ---------- DASHBOARD ---------- */}
           {page === "dashboard" && (
             <div className="gm-page">
-              <p className="display gm-heading">Good evening 👋</p>
               <p style={{ color: "var(--text-soft)", marginBottom: 24 }}>
                 Today's snapshot
               </p>
@@ -558,13 +652,14 @@ export default function GuestManagerApp() {
                         <th>Pax</th>
                         <th>Table</th>
                         <th>Status</th>
+                        <th>Arrival / Departure</th>
                         <th>Notes</th>
                       </tr>
                     </thead>
                     <tbody>
                       {todayRows.length === 0 ? (
                         <tr>
-                          <td colSpan={7} style={{ textAlign: "center", padding: 32 }}>
+                          <td colSpan={8} style={{ textAlign: "center", padding: 32 }}>
                             No entries today
                           </td>
                         </tr>
@@ -584,6 +679,9 @@ export default function GuestManagerApp() {
                               <span className={badgeClass(r.status)}>
                                 {statusIcon(r.status)} {r.status}
                               </span>
+                            </td>
+                            <td>
+                              <ArriveDepartToggle r={r} />
                             </td>
                             <td style={{ maxWidth: 180 }}>{r.notes || "—"}</td>
                           </tr>
@@ -661,12 +759,14 @@ export default function GuestManagerApp() {
                         <th>#</th>
                         <th>Name</th>
                         <th>Phone</th>
+                        <th>Email</th>
                         <th>Type</th>
                         <th>Date</th>
                         <th>Time</th>
                         <th>Pax</th>
                         <th>Table</th>
                         <th>Status</th>
+                        <th>Arrival / Departure</th>
                         <th>Staff</th>
                         <th>Notes</th>
                         <th>Actions</th>
@@ -675,7 +775,7 @@ export default function GuestManagerApp() {
                     <tbody>
                       {filtered.length === 0 ? (
                         <tr>
-                          <td colSpan={12} style={{ textAlign: "center", padding: 32 }}>
+                          <td colSpan={14} style={{ textAlign: "center", padding: 32 }}>
                             No matching records
                           </td>
                         </tr>
@@ -687,6 +787,7 @@ export default function GuestManagerApp() {
                               <b>{r.name}</b>
                             </td>
                             <td>{r.phone || "—"}</td>
+                            <td>{r.email || "—"}</td>
                             <td>{typeBadge(r.type)}</td>
                             <td>{r.date}</td>
                             <td>{r.time}</td>
@@ -696,6 +797,9 @@ export default function GuestManagerApp() {
                               <span className={badgeClass(r.status)}>
                                 {statusIcon(r.status)} {r.status}
                               </span>
+                            </td>
+                            <td>
+                              <ArriveDepartToggle r={r} />
                             </td>
                             <td>{r.staff || "—"}</td>
                             <td style={{ maxWidth: 140 }}>{r.notes || "—"}</td>
@@ -852,7 +956,9 @@ export default function GuestManagerApp() {
               {repeatGuest && (
                 <div className="gm-repeat-alert">
                   <span>
-                    🔄 Repeat guest: <strong>{repeatGuest.name}</strong> (last visit{" "}
+                    🔄 Repeat guest: <strong>{repeatGuest.name}</strong> ·{" "}
+                    {repeatVisitCount} past visit
+                    {repeatVisitCount === 1 ? "" : "s"} (last visit{" "}
                     {repeatGuest.date})
                   </span>
                   <button onClick={() => loadGuestData(repeatGuest)}>Load details</button>
@@ -883,6 +989,17 @@ export default function GuestManagerApp() {
                     placeholder="Contact number"
                     value={form.phone}
                     onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="gm-form-row">
+                <div className="gm-form-group">
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    placeholder="guest@email.com"
+                    value={form.email}
+                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                   />
                 </div>
               </div>
@@ -923,8 +1040,10 @@ export default function GuestManagerApp() {
                     onChange={(e) => setForm((f) => ({ ...f, table: e.target.value }))}
                   >
                     <option value="">-- Select --</option>
-                    {tableList.map((t) => (
-                      <option key={t.name}>{t.name}</option>
+                    {availableTables.map((t) => (
+                      <option key={t.name}>
+                        {t.name} · seats {t.cap}
+                      </option>
                     ))}
                   </select>
                 </div>
