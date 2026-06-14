@@ -956,7 +956,9 @@ export default function GuestManagerApp() {
               {repeatGuest && (
                 <div className="gm-repeat-alert">
                   <span>
-                    🔄 Repeat guest: <strong>{repeatGuest.name}</strong> (last visit{" "}
+                    🔄 Repeat guest: <strong>{repeatGuest.name}</strong> ·{" "}
+                    {repeatVisitCount} past visit
+                    {repeatVisitCount === 1 ? "" : "s"} (last visit{" "}
                     {repeatGuest.date})
                   </span>
                   <button onClick={() => loadGuestData(repeatGuest)}>Load details</button>
