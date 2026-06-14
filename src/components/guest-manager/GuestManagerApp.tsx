@@ -994,6 +994,17 @@ export default function GuestManagerApp() {
               </div>
               <div className="gm-form-row">
                 <div className="gm-form-group">
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    placeholder="guest@email.com"
+                    value={form.email}
+                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="gm-form-row">
+                <div className="gm-form-group">
                   <label>Date</label>
                   <input
                     type="date"
