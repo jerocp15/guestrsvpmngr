@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from "react";
-import { Guest, RsvpStatus, EntryType } from "../types";
+import { Guest, RsvpStatus, EntryType, TableConfig } from "../types";
 import { User, Users, CheckCircle, HelpCircle, Utensils, Clipboard, Clock, TrendingUp, Calendar } from "lucide-react";
 import { getTodayStringInTimezone, getDetectedTimezone } from "../utils/timezone";
 import {
