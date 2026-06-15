@@ -645,6 +645,7 @@ export default function App() {
           {activeTab === "dashboard" && (
             <DashboardView
               guests={guests}
+              tables={tables}
               onEditGuest={handleEditGuestClick}
               onDeleteGuest={handleDeleteGuest}
               onUpdateStatus={handleUpdateGuestStatus}
@@ -655,6 +656,7 @@ export default function App() {
           {activeTab === "reservations" && (
             <ReservationsView
               guests={guests}
+              tables={tables}
               onEditGuest={handleEditGuestClick}
               onDeleteGuest={handleDeleteGuest}
               onUpdateStatus={handleUpdateGuestStatus}
