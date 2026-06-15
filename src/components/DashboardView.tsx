@@ -146,6 +146,11 @@ export default function DashboardView({ guests, tables, onEditGuest, onDeleteGue
   };
 
   const getTableIcon = (tableName: string) => {
+    // Prefer the live tables state so icon edits reflect immediately.
+    if (tables && tables.length) {
+      const match = tables.find(t => t.name === tableName);
+      if (match && match.icon) return match.icon;
+    }
     try {
       const cachedTables = localStorage.getItem("guest_rsvp_mngr_tables");
       if (cachedTables) {
