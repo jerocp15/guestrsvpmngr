@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from "react";
-import { Guest, RsvpStatus, EntryType } from "../types";
+import { Guest, RsvpStatus, EntryType, TableConfig } from "../types";
 import { Search, Calendar, Filter, X, Edit, Trash2 } from "lucide-react";
 
 interface ReservationsViewProps {
