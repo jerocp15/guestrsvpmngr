@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from "react";
-import { Guest, RsvpStatus, EntryType } from "../types";
+import { Guest, RsvpStatus, EntryType, TableConfig } from "../types";
 import { User, Users, CheckCircle, HelpCircle, Utensils, Clipboard, Clock, TrendingUp, Calendar } from "lucide-react";
 import { getTodayStringInTimezone, getDetectedTimezone } from "../utils/timezone";
 import {
@@ -44,13 +44,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 interface DashboardViewProps {
   guests: Guest[];
+  tables?: TableConfig[];
   onEditGuest: (guest: Guest) => void;
   onDeleteGuest: (id: string) => void;
   onUpdateStatus: (id: string, newStatus: RsvpStatus) => void;
   timezone?: string;
 }
 
-export default function DashboardView({ guests, onEditGuest, onDeleteGuest, onUpdateStatus, timezone }: DashboardViewProps) {
+export default function DashboardView({ guests, tables, onEditGuest, onDeleteGuest, onUpdateStatus, timezone }: DashboardViewProps) {
   const [chartMetric, setChartMetric] = useState<"breakdown" | "pax">("breakdown");
 
   const getUpcomingWeekData = () => {
@@ -145,6 +146,11 @@ export default function DashboardView({ guests, onEditGuest, onDeleteGuest, onUp
   };
 
   const getTableIcon = (tableName: string) => {
+    // Prefer the live tables state so icon edits reflect immediately.
+    if (tables && tables.length) {
+      const match = tables.find(t => t.name === tableName);
+      if (match && match.icon) return match.icon;
+    }
     try {
       const cachedTables = localStorage.getItem("guest_rsvp_mngr_tables");
       if (cachedTables) {

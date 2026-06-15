@@ -4,11 +4,12 @@
  */
 
 import React, { useState } from "react";
-import { Guest, RsvpStatus, EntryType } from "../types";
+import { Guest, RsvpStatus, EntryType, TableConfig } from "../types";
 import { Search, Calendar, Filter, X, Edit, Trash2 } from "lucide-react";
 
 interface ReservationsViewProps {
   guests: Guest[];
+  tables?: TableConfig[];
   onEditGuest: (guest: Guest) => void;
   onDeleteGuest: (id: string) => void;
   onUpdateStatus: (id: string, newStatus: RsvpStatus) => void;
@@ -18,6 +19,7 @@ interface ReservationsViewProps {
 
 export default function ReservationsView({
   guests,
+  tables,
   onEditGuest,
   onDeleteGuest,
   onUpdateStatus,
@@ -25,6 +27,11 @@ export default function ReservationsView({
   onBulkDeleteGuests
 }: ReservationsViewProps) {
   const getTableIcon = (tableName: string) => {
+    // Prefer the live tables state so icon edits reflect immediately.
+    if (tables && tables.length) {
+      const match = tables.find(t => t.name === tableName);
+      if (match && match.icon) return match.icon;
+    }
     try {
       const cachedTables = localStorage.getItem("guest_rsvp_mngr_tables");
       if (cachedTables) {
@@ -97,6 +104,15 @@ export default function ReservationsView({
   const formatGeneralTime = (timeStr: string) => {
     if (!timeStr) return "—";
     try {
+      // Already a 12-hour AM/PM string (e.g. "07:00 PM") — normalize and return.
+      const ampmMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      if (ampmMatch) {
+        const h = parseInt(ampmMatch[1], 10);
+        const m = ampmMatch[2];
+        const ap = ampmMatch[3].toUpperCase();
+        return `${h}:${m} ${ap}`;
+      }
+      // Otherwise treat as 24-hour ("19:00") and convert to 12-hour.
       const parts = timeStr.split(":");
       const hour = parseInt(parts[0], 10);
       const min = parseInt(parts[1], 10);
