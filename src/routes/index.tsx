@@ -1,31 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
-import GuestManagerApp from "@/components/guest-manager/GuestManagerApp";
-import AuthGate from "@/components/auth/AuthGate";
+import { useEffect, useState } from "react";
+import App from "../App";
+import { clientConfig } from "../lib/config";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Reservation Management · Smart Restaurant Reservations" },
-      {
-        name: "description",
-        content:
-          "Reservation Management — a smart reservation system with repeat-guest detection, a live table map, staff management, and CSV export for restaurants.",
-      },
-      { property: "og:title", content: "Reservation Management · Smart Restaurant Reservations" },
-      {
-        property: "og:description",
-        content:
-          "Manage reservations and walk-ins, track a live table map, and detect repeat guests — all in one elegant dashboard.",
-      },
+      { title: `${clientConfig.appName} - Restaurant Reservations` },
+      { name: "description", content: "Manage restaurant reservations, walk-ins, table maps, and staff with a beautiful real-time dashboard." },
+      { property: "og:title", content: clientConfig.appName },
+      { property: "og:description", content: "Restaurant reservations, table maps, and staff management." },
     ],
   }),
   component: Index,
 });
 
 function Index() {
-  return (
-    <AuthGate>
-      <GuestManagerApp />
-    </AuthGate>
-  );
+  // App uses localStorage at init — render only on client to avoid SSR mismatch.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+  return <App />;
 }
