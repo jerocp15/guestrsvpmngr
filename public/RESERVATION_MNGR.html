@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+  <meta name="description" content="Guest Manager - smart reservation system with repeat guest detection, live table map, staff management, and PWA support.">
+  <meta name="theme-color" content="#0f1f38">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Guest Manager">
+  <link rel="manifest" href="data:application/manifest+json,{
+    %22name%22:%22Guest%20Manager%22,
+    %22short_name%22:%22GuestMgr%22,
+    %22start_url%22:%22.%22,
+    %22display%22:%22standalone%22,
+    %22background_color%22:%22%230f1f38%22,
+    %22theme_color%22:%22%230f1f38%22,
+    %22icons%22:[
+      {%22src%22:%22data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230f1f38'/%3E%3Ctext x='96' y='130' font-size='90' text-anchor='middle' fill='%23c9972c'%3E📋%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22%7D,
+      {%22src%22:%22data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%230f1f38'/%3E%3Ctext x='256' y='350' font-size='240' text-anchor='middle' fill='%23c9972c'%3E📋%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22512x512%22,%22type%22:%22image/svg+xml%22%7D
+    ]
+  }">
+  <title>Guest Manager · PWA App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0f1f38;
+      --navy-mid: #1a2f50;
+      --navy-soft: #243652;
+      --gold: #c9972c;
+      --gold-light: #f5e6c8;
+      --gold-pale: #fdf6e9;
+      --cream: #faf8f4;
+      --white: #ffffff;
+      --text-dark: #1a2b4a;
+      --text-mid: #4b5c73;
+      --text-soft: #8a9ab5;
+      --border: #e2e8f0;
+      --shadow-sm: 0 2px 8px rgba(15,31,56,0.08);
+      --shadow-md: 0 6px 24px rgba(15,31,56,0.12);
+      --shadow-lg: 0 16px 40px rgba(15,31,56,0.18);
+      --confirmed-bg: #ecfdf5; --confirmed-fg: #065f46;
+      --seated-bg: #eff6ff; --seated-fg: #1e40af;
+      --pending-bg: #fffbeb; --pending-fg: #92400e;
+      --noshow-bg: #fff7ed; --noshow-fg: #9a3412;
+      --cancelled-bg: #fef2f2; --cancelled-fg: #991b1b;
+      --walkin-bg: #f0fdf4; --walkin-fg: #166534;
+      --res-bg: #eef2ff; --res-fg: #3730a3;
+      --repeat-bg: #fff8e7;
+      --touch-target: 44px;
+    }
+    html { font-size: 15px; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text-dark); -webkit-tap-highlight-color: transparent; }
+    button, .nav-btn, .table-slot, .type-opt, .icon-btn, .btn, select, input { touch-action: manipulation; }
+    .app { display: flex; min-height: 100vh; position: relative; }
+    /* ---------- SIDEBAR ---------- */
+    .sidebar {
+      width: 270px; flex-shrink: 0; background: var(--navy); display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 1000;
+      transition: transform 0.3s cubic-bezier(0.2,0.9,0.4,1.1); transform: translateX(0);
+      box-shadow: var(--shadow-lg);
+    }
+    .sidebar-logo { padding: 28px 24px 22px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-logo h1 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--white); letter-spacing: -0.3px; }
+    .sidebar-logo p { font-size: 12px; color: var(--text-soft); margin-top: 6px; }
+    .sidebar-nav { flex: 1; padding: 24px 18px; }
+    .nav-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--text-soft); text-transform: uppercase; padding: 0 10px; margin: 18px 0 10px; }
+    .nav-btn { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 16px; background: none; border: none; border-radius: 14px; color: rgba(255,255,255,0.7); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; text-align: left; transition: all 0.2s ease; margin-bottom: 6px; }
+    .nav-btn:hover { background: rgba(255,255,255,0.08); color: var(--white); }
+    .nav-btn.active { background: rgba(201,151,44,0.22); color: var(--gold); }
+    .nav-btn .icon { font-size: 22px; width: 28px; text-align: center; }
+    .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 11px; color: var(--text-soft); text-align: center; }
+    @media (max-width: 1024px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } .main { margin-left: 0 !important; } }
+    @media (min-width: 1025px) { .sidebar { transform: translateX(0) !important; position: sticky; top: 0; } .main { margin-left: 270px; } .menu-btn-ipad { display: none !important; } }
+    .sidebar-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(3px); z-index: 999; display: none; }
+    .sidebar-backdrop.active { display: block; }
+    /* main */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 12px 24px; min-height: 72px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; gap: 16px; flex-wrap: wrap; box-shadow: var(--shadow-sm); }
+    .topbar-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .topbar-left h2 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 600; color: var(--navy); }
+    .date-badge { background: var(--gold-pale); border: 1px solid var(--gold-light); color: var(--gold); font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 40px; }
+    .topbar-right { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 40px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; }
+    .btn-primary { background: var(--navy); color: var(--white); }
+    .btn-primary:active { background: var(--navy-mid); transform: scale(0.97); }
+    .btn-gold { background: var(--gold); color: var(--white); }
+    .btn-ghost { background: var(--border); color: var(--text-mid); }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-mid); }
+    .menu-btn-ipad { background: var(--white); border: 1px solid var(--border); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: var(--shadow-sm); }
+    .page { display: none; padding: 28px 24px; animation: fadeUp 0.25s ease; }
+    .page.active { display: block; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 18px; margin-bottom: 28px; }
+    .kpi-card { background: var(--white); border-radius: 24px; padding: 20px 18px; box-shadow: var(--shadow-sm); }
+    .kpi-card .value { font-size: 34px; font-weight: 700; font-family: 'Playfair Display', serif; color: var(--navy); }
+    .card { background: var(--white); border-radius: 24px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 28px; }
+    .card-header { padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+    .card-header h3 { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 600; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 680px; }
+    thead th { padding: 14px 14px; background: var(--navy); color: white; font-weight: 600; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
+    td { padding: 14px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border-radius: 30px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .badge-confirmed { background: var(--confirmed-bg); color: var(--confirmed-fg); }
+    .badge-seated { background: var(--seated-bg); color: var(--seated-fg); }
+    .badge-pending { background: var(--pending-bg); color: var(--pending-fg); }
+    .badge-noshow { background: var(--noshow-bg); color: var(--noshow-fg); }
+    .badge-cancelled { background: var(--cancelled-bg); color: var(--cancelled-fg); }
+    .badge-walkin { background: var(--walkin-bg); color: var(--walkin-fg); }
+    .badge-reservation { background: var(--res-bg); color: var(--res-fg); }
+    .filter-bar { display: flex; flex-wrap: wrap; gap: 12px; padding: 16px 24px; border-bottom: 1px solid var(--border); }
+    .search-wrap { flex: 2; min-width: 200px; position: relative; }
+    .search-wrap input { width: 100%; padding: 12px 12px 12px 40px; border-radius: 40px; border: 1px solid var(--border); font-size: 14px; background: var(--cream); }
+    .filter-sel, .filter-date { padding: 10px 16px; border-radius: 40px; border: 1px solid var(--border); background: var(--cream); font-size: 13px; }
+    .summary-bar { padding: 14px 24px; background: var(--gold-pale); font-size: 13px; border-bottom: 1px solid var(--gold-light); }
+    .table-map-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px; padding: 28px; }
+    .table-slot { border-radius: 20px; padding: 18px 12px; text-align: center; cursor: pointer; transition: 0.12s; border: 2px solid transparent; }
+    .table-slot:active { transform: scale(0.97); }
+    .table-slot .t-icon { font-size: 34px; }
+    .table-slot .t-name { font-weight: 700; font-size: 15px; margin: 8px 0 4px; }
+    .ts-available { background: var(--confirmed-bg); border-color: #a7f3d0; color: var(--confirmed-fg); }
+    .ts-reserved { background: var(--res-bg); border-color: #c7d2fe; color: var(--res-fg); }
+    .ts-seated { background: var(--pending-bg); border-color: #fde68a; color: var(--pending-fg); }
+    .ts-unavailable { background: var(--cancelled-bg); border-color: #fecaca; color: var(--cancelled-fg); }
+    .legend { display: flex; gap: 20px; padding: 16px 28px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+    .overlay { position: fixed; inset: 0; background: rgba(10,20,40,0.6); backdrop-filter: blur(5px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .overlay.open { display: flex; }
+    .modal { background: var(--white); border-radius: 32px; max-width: 620px; width: 94vw; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+    .modal-head { background: var(--navy); padding: 22px 26px; display: flex; justify-content: space-between; align-items: center; border-radius: 32px 32px 0 0; }
+    .modal-head h3 { color: white; font-family: 'Playfair Display', serif; font-size: 18px; }
+    .modal-close { background: rgba(255,255,255,0.15); border: none; width: 34px; height: 34px; border-radius: 12px; color: white; font-size: 18px; cursor: pointer; }
+    .modal-body { padding: 28px 28px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 6px; }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-mid); margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 14px; border-radius: 14px; border: 1.5px solid var(--border); font-family: 'DM Sans', sans-serif; font-size: 14px; background: var(--cream); }
+    .staff-list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--cream); border-radius: 16px; margin-bottom: 8px; border: 1px solid var(--border); }
+    .staff-list-item button { background: none; border: none; font-size: 20px; cursor: pointer; color: #dc2626; padding: 4px 8px; border-radius: 30px; }
+    .add-staff-row { display: flex; gap: 12px; margin: 16px 0 20px; }
+    .repeat-guest-alert { background: var(--repeat-bg); border-left: 4px solid var(--gold); border-radius: 14px; padding: 12px 14px; margin-bottom: 20px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .repeat-guest-alert button { background: var(--gold); color: white; border: none; padding: 6px 14px; border-radius: 40px; font-weight: 600; font-size: 12px; cursor: pointer; }
+    .conflict-warning { background: #fff1f0; border-left: 4px solid #dc2626; border-radius: 14px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #991b1b; display: none; }
+    .type-toggle { display: flex; gap: 12px; margin-bottom: 24px; }
+    .type-opt { flex: 1; text-align: center; padding: 12px; border-radius: 50px; border: 1.5px solid var(--border); background: none; font-weight: 600; cursor: pointer; }
+    .active-res { background: var(--res-bg); border-color: var(--res-fg); color: var(--res-fg); }
+    .active-wi { background: var(--walkin-bg); border-color: var(--walkin-fg); color: var(--walkin-fg); }
+    .icon-btn { width: 38px; height: 38px; border-radius: 12px; border: none; font-size: 18px; cursor: pointer; margin: 0 3px; }
+    .icon-btn-edit { background: #eff6ff; color: #2563eb; }
+    .icon-btn-del { background: #fef2f2; color: #dc2626; }
+    .toast { position: fixed; bottom: 28px; right: 28px; background: var(--navy); color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 500; box-shadow: var(--shadow-lg); transform: translateY(80px); opacity: 0; transition: 0.25s; z-index: 2100; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .bar-label { width: 95px; font-size: 12px; }
+    .bar-track { flex: 1; height: 8px; background: var(--border); border-radius: 10px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 10px; }
+    /* PWA install banner */
+    .install-banner { position: fixed; bottom: 20px; left: 20px; right: 20px; background: var(--navy); color: white; padding: 14px 20px; border-radius: 60px; display: flex; justify-content: space-between; align-items: center; z-index: 3000; box-shadow: var(--shadow-lg); backdrop-filter: blur(8px); background: rgba(15,31,56,0.95); transform: translateY(100px); transition: transform 0.3s; pointer-events: none; }
+    .install-banner.show { transform: translateY(0); pointer-events: auto; }
+    .install-banner button { background: var(--gold); border: none; padding: 8px 18px; border-radius: 40px; color: var(--navy); font-weight: bold; cursor: pointer; }
+  </style>
+</head>
+<body>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><h1>Guest Manager</h1><p>Staff + Table Map · PWA App</p></div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Main</div>
+      <button class="nav-btn active" onclick="showPage('dashboard', this); closeSidebarIfMobile();"><span class="icon">📊</span> Dashboard</button>
+      <button class="nav-btn" onclick="showPage('reservations', this); closeSidebarIfMobile();"><span class="icon">📋</span> All Reservations</button>
+      <button class="nav-btn" onclick="showPage('tablemap', this); closeSidebarIfMobile();"><span class="icon">🗺️</span> Table Map</button>
+      <div class="nav-label">Actions</div>
+      <button class="nav-btn" onclick="openModal('reservation'); closeSidebarIfMobile();"><span class="icon">➕</span> Add Reservation</button>
+      <button class="nav-btn" onclick="openModal('walkin'); closeSidebarIfMobile();"><span class="icon">🚶</span> Log Walk-In</button>
+      <div class="nav-label">Tools</div>
+      <button class="nav-btn" onclick="openStaffManager(); closeSidebarIfMobile();"><span class="icon">👥</span> Manage Staff</button>
+      <button class="nav-btn" onclick="exportCSV(); closeSidebarIfMobile();"><span class="icon">📥</span> Export CSV</button>
+      <button class="nav-btn" onclick="window.print(); closeSidebarIfMobile();"><span class="icon">🖨️</span> Print View</button>
+    </nav>
+    <div class="sidebar-footer">Install app · Works offline</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left"><button class="menu-btn-ipad" id="menuBtn">☰</button><h2 id="page-title">Dashboard</h2><span class="date-badge" id="today-badge"></span></div>
+      <div class="topbar-right"><button class="btn btn-gold" onclick="openModal('walkin')">🚶 Walk-In</button><button class="btn btn-primary" onclick="openModal('reservation')">➕ Reservation</button></div>
+    </div>
+
+    <div class="page active" id="page-dashboard">
+      <p style="font-family:'Playfair Display'; font-size:26px; font-weight:700;">Good evening 👋</p>
+      <p style="color:var(--text-soft); margin-bottom:24px;">Today's snapshot</p>
+      <div class="kpi-grid" id="kpi-grid"></div>
+      <div style="display:grid; gap:20px; grid-template-columns:1fr 1fr; margin-bottom:28px;">
+        <div class="card" style="padding:20px;"><h4>📊 Reservations by Status</h4><div id="status-bars"></div></div>
+        <div class="card" style="padding:20px;"><h4>🕐 Popular time slots</h4><div id="time-bars"></div></div>
+      </div>
+      <div class="card"><div class="card-header"><h3>Today's Guests</h3><span id="today-count" class="badge badge-seated"></span></div><div class="table-wrap"><table><thead><tr><th>Guest</th><th>Type</th><th>Time</th><th>Pax</th><th>Table</th><th>Status</th><th>Notes</th></tr></thead><tbody id="today-tbody"></tbody></table></div></div>
+    </div>
+
+    <div class="page" id="page-reservations">
+      <p style="font-family:'Playfair Display'; font-size:26px; font-weight:700;">All Reservations</p>
+      <div class="card">
+        <div class="filter-bar"><div class="search-wrap"><span style="position:absolute; left:14px; top:12px;">🔍</span><input type="text" id="search-input" placeholder="Search guest, phone, notes" oninput="renderTable()"></div><input type="date" class="filter-date" id="filter-date" onchange="renderTable()"><select class="filter-sel" id="filter-type" onchange="renderTable()"><option value="">All Types</option><option>Reservation</option><option>Walk-In</option></select><select class="filter-sel" id="filter-status" onchange="renderTable()"><option value="">All Status</option><option>Confirmed</option><option>Seated</option><option>Pending</option><option>No-Show</option><option>Cancelled</option></select><button class="btn btn-ghost" onclick="clearFilters()">✕ Clear</button></div>
+        <div class="summary-bar" id="summary-bar"></div>
+        <div class="table-wrap"><table><thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Type</th><th>Date</th><th>Time</th><th>Pax</th><th>Table</th><th>Status</th><th>Staff</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="res-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-tablemap">
+      <p style="font-family:'Playfair Display'; font-size:26px; font-weight:700;">Table Map</p>
+      <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:20px;"><div style="background:white; border-radius:40px; padding:8px 18px;"><span>📅</span><input type="date" id="map-date" style="border:none; font-weight:600;" onchange="renderTableMap()"></div><button class="btn btn-ghost" onclick="renderTableMap()">🔄 Refresh</button><button class="btn btn-primary" onclick="openTableManager()">⚙ Manage Tables</button><button class="btn btn-gold" onclick="openModal('reservation')">➕ New Reservation</button></div>
+      <div id="map-stats" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px;"></div>
+      <div class="card"><div class="table-map-grid" id="table-map-grid"></div><div class="legend"><div class="legend-item"><span style="width:12px;height:12px;background:#10b981;border-radius:50%;display:inline-block;"></span> Available</div><div class="legend-item"><span style="width:12px;height:12px;background:#6366f1;border-radius:50%;display:inline-block;"></span> Reserved</div><div class="legend-item"><span style="width:12px;height:12px;background:#f59e0b;border-radius:50%;display:inline-block;"></span> Occupied</div><div class="legend-item"><span style="width:12px;height:12px;background:#ef4444;border-radius:50%;display:inline-block;"></span> Unavailable</div><div class="legend-item" style="margin-left:auto;">💡 Tap table to edit</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Staff Manager Modal -->
+<div class="overlay" id="staff-overlay" onclick="closeStaffManager(event)">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-head"><h3>👥 Manage Staff</h3><button class="modal-close" onclick="closeStaffManager()">✕</button></div>
+    <div class="modal-body">
+      <div class="add-staff-row"><input type="text" id="new-staff-name" placeholder="Staff name" style="flex:1; padding:12px; border-radius:40px; border:1px solid var(--border);"><button class="btn btn-primary" onclick="addStaff()">➕ Add</button></div>
+      <div id="staff-list-container" style="max-height: 300px; overflow-y: auto;"></div>
+      <p style="font-size:12px; color:var(--text-soft); margin-top:12px;">Removing a staff member won't delete past assignments.</p>
+    </div>
+    <div class="modal-footer" style="padding:16px 28px 28px; display:flex; justify-content:flex-end;"><button class="btn btn-ghost" onclick="closeStaffManager()">Close</button></div>
+  </div>
+</div>
+
+<!-- Table Manager Modal -->
+<div class="overlay" id="tm-overlay" onclick="closeTM(event)"><div class="modal"><div class="modal-head"><h3>⚙ Manage Tables</h3><button class="modal-close" onclick="closeTM()">✕</button></div><div class="modal-body"><div style="display:flex; justify-content:space-between; margin-bottom:16px;"><p>Edit table name, capacity, icon</p><button class="btn btn-gold" onclick="addTableRow()">➕ Add Table</button></div><div class="table-wrap"><table style="min-width:400px;"><thead><tr><th>Icon</th><th>Name</th><th>Cap</th><th>Override</th><th>Del</th></tr></thead><tbody id="tm-tbody"></tbody></table></div></div><div class="modal-footer" style="padding:16px 24px 24px; display:flex; justify-content:flex-end; gap:12px;"><button class="btn btn-ghost" onclick="closeTM()">Cancel</button><button class="btn btn-primary" onclick="saveTableManager()">Save Changes</button></div></div></div>
+<div class="overlay" id="ts-overlay" onclick="closeTS(event)"><div class="modal"><div class="modal-head"><h3 id="ts-title">Table status</h3><button class="modal-close" onclick="closeTS()">✕</button></div><div class="modal-body"><div id="ts-options" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;"></div><div style="margin-top:20px;"><label>🔗 Link to reservation</label><select id="ts-rsvp-select" style="width:100%; padding:12px; border-radius:40px;"></select></div></div><div class="modal-footer" style="padding:16px 24px 24px; display:flex; gap:12px; justify-content:flex-end;"><button class="btn btn-ghost" onclick="closeTS()">Cancel</button><button class="btn btn-primary" onclick="applyTableStatus()">Apply</button></div></div></div>
+<div class="overlay" id="overlay" onclick="closeModal(event)"><div class="modal"><div class="modal-head"><h3 id="modal-title">New Reservation</h3><button class="modal-close" onclick="closeModal()">✕</button></div><div class="modal-body"><div class="type-toggle"><button class="type-opt active-res" id="opt-res" onclick="setType('Reservation')">📋 Reservation</button><button class="type-opt" id="opt-wi" onclick="setType('Walk-In')">🚶 Walk-In</button></div><input type="hidden" id="f-type" value="Reservation"><input type="hidden" id="f-edit-id"><div id="repeatGuestAlert" class="repeat-guest-alert" style="display:none;"></div><div id="tableConflictAlert" class="conflict-warning"></div><div class="form-row"><div class="form-group"><label>Guest Name</label><input type="text" id="f-name" placeholder="Full name"></div><div class="form-group"><label>Phone</label><input type="text" id="f-phone" placeholder="Contact number"></div></div><div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f-date"></div><div class="form-group"><label>Time</label><input type="time" id="f-time"></div></div><div class="form-row"><div class="form-group"><label>Pax</label><input type="number" id="f-pax" min="1" value="2"></div><div class="form-group"><label>Table</label><select id="f-table"></select></div></div><div class="form-row"><div class="form-group"><label>Status</label><select id="f-status"><option>Confirmed</option><option>Seated</option><option>Pending</option><option>No-Show</option><option>Cancelled</option></select></div><div class="form-group"><label>Staff</label><select id="f-staff"></select></div></div><div class="form-group"><label>Special notes</label><textarea id="f-notes" rows="2" placeholder="Allergies, celebrations, requests..."></textarea></div><div style="text-align:right; margin-top:8px;"><button type="button" class="btn btn-outline" style="padding:6px 12px; font-size:12px;" onclick="openStaffManager()">👥 Edit Staff List</button></div></div><div class="modal-footer" style="padding:16px 28px 28px; display:flex; gap:12px; justify-content:flex-end;"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveEntryWithConflictCheck()">Save entry</button></div></div></div>
+
+<div class="toast" id="toast">✅ Done</div>
+<div class="install-banner" id="installBanner"><span>📱 Install Guest Manager as App</span><button id="installBtn">Install</button></div>
+
+<script>
+  // ---------- FULL RESERVATION SYSTEM (same as original, plus PWA) ----------
+  let reservations = JSON.parse(localStorage.getItem('rsvp_data') || 'null') || [
+    { id:1, name:"Maria Santos", phone:"+63 912 345 6789", type:"Reservation", date:"2025-07-15", time:"07:00 PM", pax:4, table:"Table 5", status:"Confirmed", notes:"Birthday cake", staff:"Ana Cruz", arrival:"" },
+    { id:2, name:"Juan dela Cruz", phone:"+63 917 654 3210", type:"Reservation", date:"2025-07-15", time:"07:30 PM", pax:2, table:"Table 2", status:"Confirmed", notes:"Anniversary", staff:"Ben Reyes", arrival:"" },
+    { id:3, name:"Walk-in Guest", phone:"", type:"Walk-In", date:"2025-07-15", time:"06:45 PM", pax:6, table:"Table 8", status:"Seated", notes:"High chair", staff:"Ana Cruz", arrival:"06:47 PM" },
+    { id:4, name:"Sarah Lee", phone:"+63 999 111 2233", type:"Reservation", date:"2025-07-16", time:"12:00 PM", pax:3, table:"Private Room", status:"Confirmed", notes:"Nut allergy", staff:"Carlo Diaz", arrival:"" }
+  ];
+  let nextId = Math.max(...reservations.map(r=>r.id),0)+1;
+  let tableList = JSON.parse(localStorage.getItem('table_list') || 'null') || [
+    { name:'Table 1', cap:2, icon:'🪑', override:'' }, { name:'Table 2', cap:2, icon:'🪑', override:'' }, { name:'Table 3', cap:4, icon:'🪑', override:'' },
+    { name:'Table 4', cap:4, icon:'🪑', override:'' }, { name:'Table 5', cap:4, icon:'🪑', override:'' }, { name:'Table 6', cap:6, icon:'🪑', override:'' },
+    { name:'Private Room', cap:12, icon:'🚪', override:'' }, { name:'Bar Area', cap:8, icon:'🍹', override:'' }, { name:'Event Hall', cap:50, icon:'🎉', override:'' }
+  ];
+  let staffList = JSON.parse(localStorage.getItem('staff_list') || 'null') || ["Ana Cruz", "Ben Reyes", "Carlo Diaz", "Donna Sy"];
+  // core functions exactly as in original (preserve all logic)
+  function saveAll() { localStorage.setItem('rsvp_data', JSON.stringify(reservations)); localStorage.setItem('table_list', JSON.stringify(tableList)); rebuildTableDropdown(); rebuildStaffDropdown(); }
+  function saveStaff() { localStorage.setItem('staff_list', JSON.stringify(staffList)); rebuildStaffDropdown(); }
+  function rebuildStaffDropdown() { let sel=document.getElementById('f-staff'); if(sel){ let cur=sel.value; sel.innerHTML='<option value="">Unassigned</option>'+staffList.map(s=>`<option value="${escapeHtml(s)}" ${cur===s?'selected':''}>${escapeHtml(s)}</option>`).join('');} }
+  function escapeHtml(str) { return str.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+  function openStaffManager() { renderStaffList(); document.getElementById('staff-overlay').classList.add('open'); }
+  function closeStaffManager(e) { if(e && e.target !== document.getElementById('staff-overlay')) return; document.getElementById('staff-overlay').classList.remove('open'); }
+  function renderStaffList() { let cont=document.getElementById('staff-list-container'); cont.innerHTML=staffList.map((s,i)=>`<div class="staff-list-item"><span>👤 ${escapeHtml(s)}</span><button onclick="removeStaff(${i})">🗑️</button></div>`).join(''); if(!staffList.length) cont.innerHTML='<p style="text-align:center;padding:20px;">No staff members. Add one above.</p>'; }
+  function addStaff() { let name=document.getElementById('new-staff-name').value.trim(); if(!name) return showToast("Enter name"); if(staffList.includes(name)) return showToast("Already exists"); staffList.push(name); saveStaff(); renderStaffList(); document.getElementById('new-staff-name').value=''; showToast(`Added ${name}`); }
+  function removeStaff(i) { if(confirm(`Remove ${staffList[i]}?`)){ staffList.splice(i,1); saveStaff(); renderStaffList(); showToast('Removed'); } }
+  function checkTableConflict(table,date,exclude){ if(!table) return null; return reservations.find(r=>r.table===table && r.date===date && r.id!==exclude && !['Cancelled','No-Show'].includes(r.status)); }
+  function showConflictWarning(c) { let w=document.getElementById('tableConflictAlert'); if(c){ w.style.display='block'; w.innerHTML=`⚠️ Table already assigned to ${c.name} (${c.time}). Override?`; } else w.style.display='none'; }
+  function attachTableConflictListener() { let ts=document.getElementById('f-table'), ds=document.getElementById('f-date'), eId=document.getElementById('f-edit-id').value?parseInt(document.getElementById('f-edit-id').value):null; let check=()=>{ let t=ts.value,d=ds.value; if(t&&d) showConflictWarning(checkTableConflict(t,d,eId)); else document.getElementById('tableConflictAlert').style.display='none'; }; ts.addEventListener('change',check); ds.addEventListener('change',check); }
+  let currentEditId=null;
+  function checkDuplicateGuest(phone) { let alertDiv=document.getElementById('repeatGuestAlert'); if(!phone||!phone.trim()){ alertDiv.style.display='none'; return; } let matches=reservations.filter(r=>r.phone&&r.phone.trim()===phone.trim()&&r.id!==currentEditId); if(matches.length===0){ alertDiv.style.display='none'; return; } matches.sort((a,b)=>new Date(b.date)-new Date(a.date)); let last=matches[0]; alertDiv.style.display='flex'; alertDiv.innerHTML=`<span>🔄 Repeat guest: <strong>${last.name}</strong> (last visit ${last.date})</span><button onclick="loadGuestData(${last.id})">Load details</button>`; }
+  function loadGuestData(id){ let g=reservations.find(r=>r.id===id); if(g){ if(!document.getElementById('f-name').value.trim()) document.getElementById('f-name').value=g.name; if(g.notes&&!document.getElementById('f-notes').value.trim()) document.getElementById('f-notes').value=g.notes; showToast(`Loaded ${g.name}`); document.getElementById('repeatGuestAlert').style.display='none'; } }
+  function attachPhoneListener() { let ph=document.getElementById('f-phone'); ph.removeEventListener('blur',()=>checkDuplicateGuest(ph.value)); ph.addEventListener('blur',()=>checkDuplicateGuest(ph.value)); }
+  function rebuildTableDropdown() { let sel=document.getElementById('f-table'); if(sel){ let cur=sel.value; sel.innerHTML='<option value="">-- Select --</option>'+tableList.map(t=>`<option${t.name===cur?' selected':''}>${t.name}</option>`).join('');} }
+  function getToday() { let t=new Date().toISOString().slice(0,10); return reservations.some(r=>r.date===t)?t:"2025-07-15"; }
+  function badgeStatus(s){ let m={Confirmed:'confirmed',Seated:'seated',Pending:'pending','No-Show':'noshow',Cancelled:'cancelled'}; let icons={Confirmed:'✅',Seated:'🪑',Pending:'⏳','No-Show':'❌',Cancelled:'🚫'}; return `<span class="badge badge-${m[s]}">${icons[s]||''} ${s}</span>`; }
+  function badgeType(t){ return t==='Walk-In'?`<span class="badge badge-walkin">🚶 Walk-In</span>`:`<span class="badge badge-reservation">📋 Rsvp</span>`; }
+  function renderDashboard(){ /* same as original */ let today=getToday(), todayRows=reservations.filter(r=>r.date===today); let totalPax=todayRows.reduce((s,r)=>s+(+r.pax||0),0), conf=todayRows.filter(r=>r.status==='Confirmed').length, seated=todayRows.filter(r=>r.status==='Seated').length, walkIns=todayRows.filter(r=>r.type==='Walk-In').length; document.getElementById('kpi-grid').innerHTML=`<div class="kpi-card"><div class="value">${todayRows.length}</div><div>Today</div></div><div class="kpi-card"><div class="value">${totalPax}</div><div>Pax</div></div><div class="kpi-card"><div class="value">${conf}</div><div>Confirmed</div></div><div class="kpi-card"><div class="value">${seated}</div><div>Seated</div></div><div class="kpi-card"><div class="value">${walkIns}</div><div>Walk-ins</div></div><div class="kpi-card"><div class="value">${reservations.length}</div><div>Total</div></div>`; let statuses=['Confirmed','Seated','Pending','No-Show','Cancelled']; let sCounts=statuses.map(s=>reservations.filter(r=>r.status===s).length); let maxS=Math.max(...sCounts,1); document.getElementById('status-bars').innerHTML=statuses.map((s,i)=>`<div class="bar-row"><div class="bar-label">${s}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(sCounts[i]/maxS*100)}%;background:${['#10b981','#6366f1','#f59e0b','#f97316','#ef4444'][i]}"></div></div><div class="bar-count">${sCounts[i]}</div></div>`).join(''); let slots=['12:00 PM','06:00 PM','07:00 PM','08:00 PM']; let tCounts=slots.map(s=>reservations.filter(r=>r.time&&r.time.includes(s.slice(0,5))).length); let maxT=Math.max(...tCounts,1); document.getElementById('time-bars').innerHTML=slots.map((s,i)=>`<div class="bar-row"><div class="bar-label">${s}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(tCounts[i]/maxT*100)}%;background:#c9972c"></div></div><div class="bar-count">${tCounts[i]}</div></div>`).join(''); let tbody=document.getElementById('today-tbody'); document.getElementById('today-count').textContent=todayRows.length+' entries'; if(!todayRows.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;">No entries today</td></tr>';return;} tbody.innerHTML=todayRows.map(r=>`<tr><td><b>${r.name}</b></td><td>${badgeType(r.type)}</td><td>${r.time}</td><td><b>${r.pax}</b></td><td>${r.table||'—'}</td><td>${badgeStatus(r.status)}</td><td style="max-width:180px;">${r.notes||'—'}</td></tr>`).join('');}
+  function renderTable(){ /* original logic */ let q=document.getElementById('search-input').value.toLowerCase(), dt=document.getElementById('filter-date').value, tp=document.getElementById('filter-type').value, st=document.getElementById('filter-status').value; let rows=reservations.filter(r=>(!dt||r.date===dt)&&(!tp||r.type===tp)&&(!st||r.status===st)&&(!q||[r.name,r.phone,r.notes,r.table,r.staff].join(' ').toLowerCase().includes(q))); let totalPax=rows.reduce((s,r)=>s+(+r.pax||0),0); document.getElementById('summary-bar').innerHTML=`Showing <b>${rows.length}</b> of ${reservations.length} · Total pax <b>${totalPax}</b>`; let tbody=document.getElementById('res-tbody'); if(!rows.length){tbody.innerHTML='<tr><td colspan="12" style="text-align:center;padding:32px;">No matching records</td></tr>';return;} tbody.innerHTML=rows.map((r,i)=>`<tr><td>${i+1}</td><td><b>${r.name}</b></td><td>${r.phone||'—'}</td><td>${badgeType(r.type)}</td><td>${r.date}</td><td>${r.time}</td><td>${r.pax}</td><td>${r.table||'—'}</td><td>${badgeStatus(r.status)}</td><td>${r.staff||'—'}</td><td style="max-width:140px;">${r.notes||'—'}</td><td><button class="icon-btn icon-btn-edit" onclick="editEntry(${r.id})">✏️</button><button class="icon-btn icon-btn-del" onclick="deleteEntry(${r.id})">🗑</button></td></tr>`).join('');}
+  function clearFilters(){ ['search-input','filter-date','filter-type','filter-status'].forEach(id=>document.getElementById(id).value=''); renderTable(); }
+  function getMapDate(){ let el=document.getElementById('map-date'); return el&&el.value?el.value:getToday(); }
+  function getTableStatus(t){ if(t.override) return t.override; let day=getMapDate(); let match=reservations.find(r=>r.table===t.name&&r.date===day&&['Confirmed','Seated','Pending'].includes(r.status)); if(!match) return 'available'; return match.status==='Seated'?'seated':'reserved'; }
+  function renderTableMap(){ let dateInput=document.getElementById('map-date'); if(dateInput&&!dateInput.value)dateInput.value=getToday(); let label={available:'Available',reserved:'Reserved',seated:'Occupied',unavailable:'Unavailable'}; let counts={available:0,reserved:0,seated:0,unavailable:0}; tableList.forEach(t=>{let s=getTableStatus(t); counts[s]=(counts[s]||0)+1;}); document.getElementById('map-stats').innerHTML=Object.entries(counts).map(([s,n])=>`<div style="background:white;border-radius:30px;padding:8px 16px;">${label[s]} <b>${n}</b></div>`).join(''); let grid=document.getElementById('table-map-grid'); grid.innerHTML=tableList.map((t,i)=>{ let s=getTableStatus(t); let cls=s==='available'?'ts-available':s==='reserved'?'ts-reserved':s==='seated'?'ts-seated':'ts-unavailable'; let linked=reservations.find(r=>r.table===t.name&&r.date===getMapDate()&&['Confirmed','Seated','Pending'].includes(r.status)); return `<div class="table-slot ${cls}" onclick="openTableStatus(${i})"><div class="t-icon">${t.icon}</div><div class="t-name">${t.name}</div><div class="t-status">${label[s]}</div><div>👥 ${t.cap}</div>${linked?`<div style="font-size:10px;">🔗 ${linked.name}</div>`:''}</div>`;}).join('');}
+  let _tsIndex=-1,_selectedKey='';
+  function openTableStatus(idx){ _tsIndex=idx; let t=tableList[idx]; let curr=getTableStatus(t); document.getElementById('ts-title').innerHTML=`${t.icon} ${t.name}`; let opts=['available','reserved','seated','unavailable'], labels=['✅ Available','📋 Reserved','🪑 Occupied','🚫 Unavailable']; document.getElementById('ts-options').innerHTML=opts.map((k,i)=>`<button onclick="selectTSOption('${k}',this)" style="padding:12px;border-radius:20px;border:2px solid ${curr===k?'var(--gold)':'var(--border)'};background:${curr===k?'var(--gold-pale)':'white'};">${labels[i]}</button>`).join(''); let day=getMapDate(); let rsvps=reservations.filter(r=>r.date===day&&['Confirmed','Pending'].includes(r.status)); let linked=reservations.find(r=>r.table===t.name&&r.date===day); let sel=document.getElementById('ts-rsvp-select'); sel.innerHTML='<option value="">— Link to reservation —</option>'+rsvps.map(r=>`<option value="${r.id}" ${linked&&linked.id===r.id?'selected':''}>${r.name} · ${r.time}</option>`).join(''); document.getElementById('ts-overlay').classList.add('open');}
+  function selectTSOption(key,btn){ _selectedKey=key; document.querySelectorAll('#ts-options button').forEach(b=>{b.style.borderColor=b.innerText.includes(key)?'var(--gold)':'var(--border)'; b.style.background=b.innerText.includes(key)?'var(--gold-pale)':'white';});}
+  function applyTableStatus(){ if(_tsIndex<0)return; let t=tableList[_tsIndex]; if(_selectedKey) t.override=_selectedKey==='available'?'':_selectedKey; let rsvpId=parseInt(document.getElementById('ts-rsvp-select').value); if(rsvpId){let r=reservations.find(x=>x.id===rsvpId); if(r){r.table=t.name; if(_selectedKey==='seated')r.status='Seated'; if(_selectedKey==='reserved')r.status='Confirmed'; saveAll();}} saveAll(); renderTableMap(); renderDashboard(); closeTS(); showToast(`Table ${t.name} updated`);}
+  function closeTS(e){ if(e&&e.target!==document.getElementById('ts-overlay'))return; document.getElementById('ts-overlay').classList.remove('open'); _tsIndex=-1; _selectedKey='';}
+  function openTableManager(){ renderTMRows(); document.getElementById('tm-overlay').classList.add('open'); }
+  function closeTM(e){ if(e&&e.target!==document.getElementById('tm-overlay'))return; document.getElementById('tm-overlay').classList.remove('open'); }
+  function renderTMRows(){ document.getElementById('tm-tbody').innerHTML=tableList.map((t,i)=>`<tr><td><select onchange="tableList[${i}].icon=this.value"><option>🪑</option><option>🚪</option><option>🍹</option><option>🎉</option><option>🌿</option></select></td><td><input value="${t.name}" oninput="tableList[${i}].name=this.value"></td><td><input type="number" value="${t.cap}" oninput="tableList[${i}].cap=+this.value" style="width:70px"></td><td><select onchange="tableList[${i}].override=this.value==='auto'?'':this.value"><option value="auto" ${!t.override?'selected':''}>Auto</option><option value="available" ${t.override==='available'?'selected':''}>Always Avail</option><option value="unavailable" ${t.override==='unavailable'?'selected':''}>Unavail</option></select></td><td><button onclick="if(confirm('Remove?')) tableList.splice(${i},1), renderTMRows()">🗑</button></td></tr>`).join('');}
+  function addTableRow(){ tableList.push({name:'New Table',cap:4,icon:'🪑',override:''}); renderTMRows(); }
+  function saveTableManager(){ saveAll(); rebuildTableDropdown(); closeTM(); renderTableMap(); showToast('Table config saved'); }
+  function openModal(type){ currentEditId=null; document.getElementById('f-edit-id').value=''; document.getElementById('f-name').value=''; document.getElementById('f-phone').value=''; document.getElementById('f-date').value=getToday(); document.getElementById('f-time').value='19:00'; document.getElementById('f-pax').value='2'; document.getElementById('f-status').value='Confirmed'; document.getElementById('f-notes').value=''; document.getElementById('repeatGuestAlert').style.display='none'; document.getElementById('tableConflictAlert').style.display='none'; setType(type==='walkin'?'Walk-In':'Reservation'); document.getElementById('modal-title').textContent=type==='walkin'?'🚶 Log Walk-In Guest':'➕ New Reservation'; document.getElementById('overlay').classList.add('open'); rebuildStaffDropdown(); attachPhoneListener(); attachTableConflictListener(); }
+  function setType(t){ document.getElementById('f-type').value=t; document.getElementById('opt-res').className='type-opt'+(t==='Reservation'?' active-res':''); document.getElementById('opt-wi').className='type-opt'+(t==='Walk-In'?' active-wi':''); if(t==='Walk-In'){ document.getElementById('f-status').value='Seated'; let now=new Date(); let hh=now.getHours().toString().padStart(2,'0'); let mm=now.getMinutes().toString().padStart(2,'0'); document.getElementById('f-name').placeholder='Walk-in Guest'; } else document.getElementById('f-status').value='Confirmed'; }
+  function saveEntryWithConflictCheck(){ let editIdRaw=document.getElementById('f-edit-id').value; let tableName=document.getElementById('f-table').value; let date=document.getElementById('f-date').value; let excludeId=editIdRaw?parseInt(editIdRaw):null; let conflict=checkTableConflict(tableName,date,excludeId); if(conflict && !confirm(`⚠️ Table is already assigned to ${conflict.name} (${conflict.time}). Override anyway?`)){ return; } saveEntry(); }
+  function saveEntry(){ let id=document.getElementById('f-edit-id').value; let type=document.getElementById('f-type').value; let name=document.getElementById('f-name').value.trim()||(type==='Walk-In'?'Walk-in Guest':''); let date=document.getElementById('f-date').value; let time24=document.getElementById('f-time').value; let pax=parseInt(document.getElementById('f-pax').value)||1; if(!date||!time24){alert('Date and time required');return;} let [h,m]=time24.split(':').map(Number); let ap=h>=12?'PM':'AM'; let h12=((h%12)||12).toString().padStart(2,'0'); let timeStr=`${h12}:${m.toString().padStart(2,'0')} ${ap}`; let entry={id:id?+id:nextId++,name,phone:document.getElementById('f-phone').value.trim(),type,date,time:timeStr,pax,table:document.getElementById('f-table').value,status:document.getElementById('f-status').value,notes:document.getElementById('f-notes').value,staff:document.getElementById('f-staff').value,arrival:''}; if(id){let idx=reservations.findIndex(r=>r.id===+id); if(idx>-1)reservations[idx]=entry;} else reservations.push(entry); saveAll(); closeModal(); renderDashboard(); renderTable(); renderTableMap(); showToast('Saved');}
+  function editEntry(id){ let r=reservations.find(x=>x.id===id); if(!r)return; currentEditId=r.id; setType(r.type); document.getElementById('f-edit-id').value=r.id; document.getElementById('f-name').value=r.name; document.getElementById('f-phone').value=r.phone||''; document.getElementById('f-date').value=r.date; document.getElementById('f-pax').value=r.pax; document.getElementById('f-table').value=r.table; document.getElementById('f-status').value=r.status; document.getElementById('f-staff').value=r.staff; document.getElementById('f-notes').value=r.notes; let time24=r.time.replace(/(\d{2}):(\d{2}) (AM|PM)/,(_,hh,mm,ap)=>{let hour=parseInt(hh); if(ap==='PM'&&hour!==12)hour+=12; if(ap==='AM'&&hour===12)hour=0; return `${hour.toString().padStart(2,'0')}:${mm}`;}); document.getElementById('f-time').value=time24; document.getElementById('repeatGuestAlert').style.display='none'; document.getElementById('tableConflictAlert').style.display='none'; document.getElementById('modal-title').textContent='✏️ Edit Entry'; document.getElementById('overlay').classList.add('open'); rebuildStaffDropdown(); attachPhoneListener(); attachTableConflictListener(); checkDuplicateGuest(r.phone);}
+  function deleteEntry(id){ if(confirm('Delete entry?')){ reservations=reservations.filter(r=>r.id!==id); saveAll(); renderDashboard(); renderTable(); renderTableMap(); showToast('Deleted'); } }
+  function exportCSV(){ let headers=['ID','Name','Phone','Type','Date','Time','Pax','Table','Status','Staff','Notes']; let rows=reservations.map(r=>[r.id,r.name,r.phone,r.type,r.date,r.time,r.pax,r.table,r.status,r.staff,r.notes].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')); let blob=new Blob([headers.join(','),...rows].join('\n'),{type:'text/csv'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`reservations_${new Date().toISOString().slice(0,10)}.csv`; a.click(); showToast('CSV exported');}
+  function showToast(msg){ let t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+  function closeModal(e){ if(e&&e.target!==document.getElementById('overlay'))return; document.getElementById('overlay').classList.remove('open'); currentEditId=null; }
+  function showPage(id,btn){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); document.getElementById('page-'+id).classList.add('active'); if(btn)btn.classList.add('active'); let titles={dashboard:'Dashboard',reservations:'All Reservations',tablemap:'Table Map'}; document.getElementById('page-title').textContent=titles[id]||id; if(id==='reservations')renderTable(); if(id==='tablemap')renderTableMap(); }
+  function closeSidebarIfMobile(){ if(window.innerWidth<=1024){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarBackdrop').classList.remove('active'); } }
+  function toggleSidebar(){ let sb=document.getElementById('sidebar'); sb.classList.toggle('open'); document.getElementById('sidebarBackdrop').classList.toggle('active',sb.classList.contains('open')); }
+  // PWA: install prompt
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installBanner').classList.add('show');
+  });
+  document.getElementById('installBtn').addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') console.log('App installed');
+      deferredPrompt = null;
+      document.getElementById('installBanner').classList.remove('show');
+    }
+  });
+  // service worker for offline caching
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('data:application/javascript,' + encodeURIComponent(`
+      self.addEventListener('install', e => e.waitUntil(caches.open('guest-mgr-v1').then(c => c.addAll(['/'])).catch(()=>{})));
+      self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
+    `)).catch(err => console.log('SW not supported', err));
+  }
+  document.addEventListener('DOMContentLoaded',()=>{ document.getElementById('today-badge').textContent=new Date().toLocaleDateString('en-PH',{weekday:'short',year:'numeric',month:'short',day:'numeric'}); document.getElementById('menuBtn').addEventListener('click',toggleSidebar); document.getElementById('sidebarBackdrop').addEventListener('click',closeSidebarIfMobile); window.addEventListener('resize',()=>{if(window.innerWidth>1024){document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarBackdrop').classList.remove('active');}}); rebuildTableDropdown(); rebuildStaffDropdown(); renderDashboard(); renderTable(); renderTableMap(); setType('Reservation'); attachPhoneListener(); attachTableConflictListener(); });
+</script>
+</body>
+</html>
