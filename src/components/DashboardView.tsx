@@ -44,13 +44,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 interface DashboardViewProps {
   guests: Guest[];
+  tables?: TableConfig[];
   onEditGuest: (guest: Guest) => void;
   onDeleteGuest: (id: string) => void;
   onUpdateStatus: (id: string, newStatus: RsvpStatus) => void;
   timezone?: string;
 }
 
-export default function DashboardView({ guests, onEditGuest, onDeleteGuest, onUpdateStatus, timezone }: DashboardViewProps) {
+export default function DashboardView({ guests, tables, onEditGuest, onDeleteGuest, onUpdateStatus, timezone }: DashboardViewProps) {
   const [chartMetric, setChartMetric] = useState<"breakdown" | "pax">("breakdown");
 
   const getUpcomingWeekData = () => {
