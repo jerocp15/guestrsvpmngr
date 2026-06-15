@@ -97,6 +97,15 @@ export default function ReservationsView({
   const formatGeneralTime = (timeStr: string) => {
     if (!timeStr) return "—";
     try {
+      // Already a 12-hour AM/PM string (e.g. "07:00 PM") — normalize and return.
+      const ampmMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      if (ampmMatch) {
+        const h = parseInt(ampmMatch[1], 10);
+        const m = ampmMatch[2];
+        const ap = ampmMatch[3].toUpperCase();
+        return `${h}:${m} ${ap}`;
+      }
+      // Otherwise treat as 24-hour ("19:00") and convert to 12-hour.
       const parts = timeStr.split(":");
       const hour = parseInt(parts[0], 10);
       const min = parseInt(parts[1], 10);
