@@ -6,7 +6,7 @@
 import React, { useState } from "react";
 import { Guest, TableConfig, RsvpStatus } from "../types";
 import { Calendar, RefreshCw, Settings2, Plus, X, Trash2, CheckCircle2 } from "lucide-react";
-import { getTodayStringInTimezone } from "../utils/timezone";
+import { getTodayStringInTimezone, getSystemTime24InTimezone } from "../utils/timezone";
 
 interface TableMapViewProps {
   guests: Guest[];
@@ -37,6 +37,13 @@ export default function TableMapView({
     setMapDate(getTodayString());
   }, [timezone]);
 
+  // Re-render every minute so the "reserved 1 hour before" window stays live
+  const [, setTick] = useState(0);
+  React.useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 60000);
+    return () => clearInterval(id);
+  }, []);
+
   // Table Manager Modal
   const [isTMOpen, setIsTMOpen] = useState(false);
   const [localTables, setLocalTables] = useState<TableConfig[]>([]);
@@ -46,18 +53,53 @@ export default function TableMapView({
   const [selectedTableIndex, setSelectedTableIndex] = useState<number | null>(null);
   const [selectedOverride, setSelectedOverride] = useState<string>("");
 
+  // Parse a stored time ("07:00 PM" or "19:00") into minutes since midnight
+  const parseTimeToMinutes = (t: string): number | null => {
+    if (!t) return null;
+    const ampm = t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (ampm) {
+      let h = parseInt(ampm[1], 10);
+      const m = parseInt(ampm[2], 10);
+      const ap = ampm[3].toUpperCase();
+      if (ap === "PM" && h !== 12) h += 12;
+      if (ap === "AM" && h === 12) h = 0;
+      return h * 60 + m;
+    }
+    const parts = t.split(":");
+    const hh = parseInt(parts[0], 10);
+    const mm = parseInt(parts[1], 10);
+    if (isNaN(hh) || isNaN(mm)) return null;
+    return hh * 60 + mm;
+  };
+
+  const nowMinutes = (): number => {
+    const cur = getSystemTime24InTimezone(timezone || "UTC");
+    const [h, m] = cur.split(":").map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+
   // Helper: check table status for specific date
   const getTableState = (table: TableConfig, dateStr: string) => {
     if (table.override) return table.override; // "available" or "unavailable"
 
-    // Find if a guest is assigned to this table on this date
-    // Statuses that count as holding a table: Confirmed, Seated, Pending
+    // Statuses that count as holding a table: Confirmed, Pending, Seated, Arrived
     const activeGuest = guests.find(
-      g => g.table === table.name && g.date === dateStr && [RsvpStatus.CONFIRMED, RsvpStatus.SEATED, RsvpStatus.PENDING].includes(g.status)
+      g => g.table === table.name && g.date === dateStr &&
+        [RsvpStatus.CONFIRMED, RsvpStatus.SEATED, RsvpStatus.PENDING, RsvpStatus.ARRIVED].includes(g.status)
     );
 
     if (!activeGuest) return "available";
-    return activeGuest.status === RsvpStatus.SEATED ? "seated" : "reserved"; // "seated" translates to occupied, "reserved" translates to blue
+
+    // Arrived or seated guests occupy the table (Arrive => Seated on the map)
+    if (activeGuest.status === RsvpStatus.SEATED || activeGuest.status === RsvpStatus.ARRIVED) return "seated";
+
+    // Confirmed/Pending: the table is automatically reserved starting 1 hour
+    // before the booking time (for today). Before that window it stays available.
+    if (dateStr === getTodayString()) {
+      const bookMin = parseTimeToMinutes(activeGuest.time);
+      if (bookMin !== null && nowMinutes() < bookMin - 60) return "available";
+    }
+    return "reserved";
   };
 
   // Metrics counting
@@ -136,7 +178,8 @@ export default function TableMapView({
   // Get active linked guest for table on mapDate
   const getLinkedGuest = (tName: string) => {
     return guests.find(
-      g => g.table === tName && g.date === mapDate && [RsvpStatus.CONFIRMED, RsvpStatus.SEATED, RsvpStatus.PENDING].includes(g.status)
+      g => g.table === tName && g.date === mapDate &&
+        [RsvpStatus.CONFIRMED, RsvpStatus.SEATED, RsvpStatus.PENDING, RsvpStatus.ARRIVED].includes(g.status)
     );
   };
 
