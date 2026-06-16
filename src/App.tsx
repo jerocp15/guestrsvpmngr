@@ -282,28 +282,36 @@ export default function App() {
   }, [staffList, loggedUsername]);
 
   // 1. ADD / UPDATE BOOKING ACTION
-  const handleSaveGuest = (savedGuest: Guest) => {
+  const handleSaveGuest = async (savedGuest: Guest) => {
     const exists = guests.some(g => g.id === savedGuest.id);
-    let updatedList: Guest[];
-    if (exists) {
-      updatedList = guests.map(g => (g.id === savedGuest.id ? savedGuest : g));
-      showToast(`✏️ ${savedGuest.name}'s details updated`);
-    } else {
-      updatedList = [savedGuest, ...guests];
-      showToast(`✅ Added reservation for ${savedGuest.name}`);
-    }
-
-    setGuests(updatedList);
-    localStorage.setItem("restaurant_reservations", JSON.stringify(updatedList));
     setIsEntryModalOpen(false);
     setGuestToEdit(null);
+    try {
+      if (exists) {
+        const updated = await updateReservation(savedGuest, loggedUsername || "");
+        setGuests(prev => prev.map(g => (g.id === savedGuest.id ? updated : g)));
+        showToast(`✏️ ${savedGuest.name}'s details updated`);
+      } else {
+        const created = await insertReservation(savedGuest, loggedUsername || "");
+        setGuests(prev => [created, ...prev]);
+        showToast(`✅ Added reservation for ${savedGuest.name}`);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("⚠️ Failed to save booking. Please try again.");
+      setGuests(await loadReservations());
+    }
   };
 
-  const handleUpdateGuestStatus = (id: string, newStatus: RsvpStatus) => {
-    const updatedList = guests.map(g => (g.id === id ? { ...g, status: newStatus } : g));
-    setGuests(updatedList);
-    localStorage.setItem("restaurant_reservations", JSON.stringify(updatedList));
+  const handleUpdateGuestStatus = async (id: string, newStatus: RsvpStatus) => {
+    setGuests(prev => prev.map(g => (g.id === id ? { ...g, status: newStatus } : g)));
     showToast(`⚡ Status updated to: ${newStatus}`);
+    try {
+      await bulkUpdateStatus([id], newStatus);
+    } catch (err) {
+      console.error(err);
+      setGuests(await loadReservations());
+    }
   };
 
   // 2. DELETE BOOKING ACTION
@@ -315,20 +323,28 @@ export default function App() {
       isOpen: true,
       title: "Remove Booking",
       message: `Are you absolutely sure you want to remove the booking for ${target.name}?`,
-      onConfirm: () => {
-        const updatedList = guests.filter(g => g.id !== id);
-        setGuests(updatedList);
-        localStorage.setItem("restaurant_reservations", JSON.stringify(updatedList));
+      onConfirm: async () => {
+        setGuests(prev => prev.filter(g => g.id !== id));
         showToast(`🗑️ ${target.name}'s reservation deleted`);
+        try {
+          await deleteReservation(id);
+        } catch (err) {
+          console.error(err);
+          setGuests(await loadReservations());
+        }
       }
     });
   };
 
-  const handleBulkUpdateGuestStatus = (ids: string[], newStatus: RsvpStatus) => {
-    const updatedList = guests.map(g => ids.includes(g.id) ? { ...g, status: newStatus } : g);
-    setGuests(updatedList);
-    localStorage.setItem("restaurant_reservations", JSON.stringify(updatedList));
+  const handleBulkUpdateGuestStatus = async (ids: string[], newStatus: RsvpStatus) => {
+    setGuests(prev => prev.map(g => ids.includes(g.id) ? { ...g, status: newStatus } : g));
     showToast(`⚡ Bulk updated status of ${ids.length} reservation(s) to: ${newStatus}`);
+    try {
+      await bulkUpdateStatus(ids, newStatus);
+    } catch (err) {
+      console.error(err);
+      setGuests(await loadReservations());
+    }
   };
 
   const handleBulkDeleteGuests = (ids: string[]) => {
@@ -336,11 +352,15 @@ export default function App() {
       isOpen: true,
       title: "Bulk Delete Bookings",
       message: `Are you absolutely sure you want to delete the ${ids.length} selected reservation(s)?`,
-      onConfirm: () => {
-        const updatedList = guests.filter(g => !ids.includes(g.id));
-        setGuests(updatedList);
-        localStorage.setItem("restaurant_reservations", JSON.stringify(updatedList));
+      onConfirm: async () => {
+        setGuests(prev => prev.filter(g => !ids.includes(g.id)));
         showToast(`🗑️ Bulk deleted ${ids.length} reservation(s)`);
+        try {
+          await bulkDeleteReservations(ids);
+        } catch (err) {
+          console.error(err);
+          setGuests(await loadReservations());
+        }
       }
     });
   };
@@ -359,48 +379,60 @@ export default function App() {
   };
 
   // 5. UPDATE GUEST SEATING TABLE DIRECTLY FROM MAP
-  const handleUpdateGuestTableDirect = (guestId: string, tableName: string, forceStatus?: RsvpStatus) => {
-    const updatedList = guests.map(g => {
-      if (g.id === guestId) {
-        return {
-          ...g,
-          table: tableName,
-          status: forceStatus || g.status
-        };
-      }
-      return g;
-    });
-
-    setGuests(updatedList);
-    localStorage.setItem("restaurant_reservations", JSON.stringify(updatedList));
+  const handleUpdateGuestTableDirect = async (guestId: string, tableName: string, forceStatus?: RsvpStatus) => {
+    const target = guests.find(g => g.id === guestId);
+    if (!target) return;
+    const updatedGuest = { ...target, table: tableName, status: forceStatus || target.status };
+    setGuests(prev => prev.map(g => (g.id === guestId ? updatedGuest : g)));
     showToast(`🔗 Assigned table to guest`);
+    try {
+      await updateReservation(updatedGuest, loggedUsername || "");
+    } catch (err) {
+      console.error(err);
+      setGuests(await loadReservations());
+    }
   };
 
   // 6. GENERAL TABLES MANAGER CONF CONFIG SAVE
-  const handleUpdateTableConfig = (newTables: TableConfig[]) => {
+  const handleUpdateTableConfig = async (newTables: TableConfig[]) => {
     setTables(newTables);
-    localStorage.setItem("guest_rsvp_mngr_tables", JSON.stringify(newTables));
     showToast("⚙️ Table deck configurations updated!");
+    try {
+      await replaceTables(newTables);
+    } catch (err) {
+      console.error(err);
+      setTables(await loadTables());
+    }
   };
 
   // 7. CREW MEMBERS CREATION/REMOVAL
-  const handleAddStaff = (name: string) => {
+  const handleAddStaff = async (name: string) => {
     if (staffList.includes(name)) {
       showToast("👤 Staff member name already exists");
       return;
     }
     const updated = [...staffList, name];
     setStaffList(updated);
-    localStorage.setItem("guest_rsvp_mngr_staff", JSON.stringify(updated));
     showToast(`👤 Waiting staff ${name} registered`);
+    try {
+      await replaceStaff(updated);
+    } catch (err) {
+      console.error(err);
+      setStaffList(await loadStaff());
+    }
   };
 
-  const handleRemoveStaff = (index: number) => {
+  const handleRemoveStaff = async (index: number) => {
     const targetName = staffList[index];
     const updated = staffList.filter((_, i) => i !== index);
     setStaffList(updated);
-    localStorage.setItem("guest_rsvp_mngr_staff", JSON.stringify(updated));
     showToast(`🗑️ ${targetName} removed from waitstaff`);
+    try {
+      await replaceStaff(updated);
+    } catch (err) {
+      console.error(err);
+      setStaffList(await loadStaff());
+    }
   };
 
   // 7.5 STORAGE & AUTO-SAVE MANAGEMENT HANDLERS (Simplified offline local fallback)
