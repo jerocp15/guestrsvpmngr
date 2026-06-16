@@ -22,6 +22,7 @@ export type Database = {
           departure: string
           email: string
           id: string
+          is_waitlist: boolean
           name: string
           notes: string
           pax: number
@@ -41,6 +42,7 @@ export type Database = {
           departure?: string
           email?: string
           id?: string
+          is_waitlist?: boolean
           name: string
           notes?: string
           pax?: number
@@ -60,6 +62,7 @@ export type Database = {
           departure?: string
           email?: string
           id?: string
+          is_waitlist?: boolean
           name?: string
           notes?: string
           pax?: number
