@@ -16,6 +16,22 @@ import { clientConfig } from "./lib/config";
 // Auth
 import { supabase } from "@/integrations/supabase/client";
 
+// Cloud persistence (account-scoped, survives updates / works across devices)
+import {
+  loadReservations,
+  loadTables,
+  loadStaff,
+  insertReservation,
+  updateReservation,
+  deleteReservation,
+  bulkUpdateStatus,
+  bulkDeleteReservations,
+  clearAllReservations,
+  importReservations,
+  replaceTables,
+  replaceStaff,
+} from "./lib/db";
+
 // Specialized Views & Overlays
 import Sidebar from "./components/Sidebar";
 import DashboardView from "./components/DashboardView";
@@ -181,88 +197,55 @@ export default function App() {
     }, 3500);
   };
 
-  // SEED AND INITIALIZE DATASETS FROM LOCAL STORAGE WITH DATA RECOVERY ON CORRUPTION
+  // LOAD ALL ACCOUNT DATA FROM THE CLOUD DATABASE (persists across updates)
   useEffect(() => {
     if (!loggedUsername) return;
+    let cancelled = false;
 
-    // Load reservations from 'restaurant_reservations' key with auto-repair/recovery
-    const rawReservations = localStorage.getItem("restaurant_reservations");
-    const cachedTables = localStorage.getItem("guest_rsvp_mngr_tables");
-    const cachedStaff = localStorage.getItem("guest_rsvp_mngr_staff");
     const cachedName = localStorage.getItem("restaurant_name");
     const cachedPhoto = localStorage.getItem("restaurant_photo");
     const cachedTz = localStorage.getItem("timezone");
 
-    let loadedGuests: Guest[] = [];
-    let loadedTables = initialTables;
-    let loadedStaff = initialStaff;
-
-    if (rawReservations) {
+    (async () => {
       try {
-        const parsed = JSON.parse(rawReservations);
-        if (Array.isArray(parsed)) {
-          // Auto repair list items to preserve fields and prevent structural failure
-          loadedGuests = parsed.map((item: any, idx: number) => {
-            return {
-              ...item,
-              id: item.id || `reservation_${Date.now()}_${idx}_${Math.floor(Math.random() * 10000)}`,
-              name: item.name || "Recovered Booking",
-              type: item.type === "Walk-In" ? "Walk-In" : "Reservation",
-              status: item.status || "Pending",
-              date: item.date || new Date().toISOString().slice(0, 10),
-              time: item.time || "07:00 PM",
-              pax: Number(item.pax) || 2,
-              table: item.table || "Unassigned"
-            };
-          });
-        } else {
-          throw new Error("Local Storage 'restaurant_reservations' is not a JSON Array");
+        setIsSyncing(true);
+        const [loadedGuests, loadedTablesRaw, loadedStaffRaw] = await Promise.all([
+          loadReservations(),
+          loadTables(),
+          loadStaff(),
+        ]);
+
+        // First-time setup: seed default tables / staff into the account.
+        let loadedTables = loadedTablesRaw;
+        if (loadedTables.length === 0) {
+          await replaceTables(initialTables);
+          loadedTables = initialTables;
         }
+        let loadedStaff = loadedStaffRaw;
+        if (loadedStaff.length === 0) {
+          await replaceStaff(initialStaff);
+          loadedStaff = initialStaff;
+        }
+
+        if (cancelled) return;
+        setGuests(loadedGuests);
+        setTables(loadedTables);
+        setStaffList(loadedStaff);
       } catch (err) {
-        console.error("Local Storage is corrupted! Resetting to empty list...", err);
-        localStorage.setItem("restaurant_reservations", JSON.stringify([]));
-        loadedGuests = [];
+        console.error("Failed to load cloud data", err);
+        if (!cancelled) showToast("⚠️ Could not load your saved data. Please refresh.");
+      } finally {
+        if (!cancelled) setIsSyncing(false);
       }
-    } else {
-      // Start with an empty list — no example/demo guests
-      localStorage.setItem("restaurant_reservations", JSON.stringify([]));
-    }
+    })();
 
-    if (cachedTables) {
-      try {
-        // Preserve whatever icon the user assigned to each table
-        loadedTables = JSON.parse(cachedTables);
-      } catch (e) {
-        loadedTables = initialTables;
-      }
-    } else {
-      localStorage.setItem("guest_rsvp_mngr_tables", JSON.stringify(initialTables));
-    }
-
-    if (cachedStaff) {
-      try {
-        loadedStaff = JSON.parse(cachedStaff);
-      } catch (e) {
-        loadedStaff = initialStaff;
-      }
-    } else {
-      localStorage.setItem("guest_rsvp_mngr_staff", JSON.stringify(initialStaff));
-    }
-
-    // Set states
-    setGuests(loadedGuests);
-    setTables(loadedTables);
-    setStaffList(loadedStaff);
-
-    // Brand Name & Photo (default comes from env config)
+    // Brand Name & Photo (UI prefs kept in local storage)
     const defaultName = cachedName || clientConfig.appName;
     setRestaurantName(defaultName);
     if (!cachedName) {
       localStorage.setItem("restaurant_name", clientConfig.appName);
     }
     setRestaurantPhoto(cachedPhoto || null);
-
-
 
     // Timezone
     if (cachedTz) {
@@ -272,50 +255,63 @@ export default function App() {
       localStorage.setItem("timezone", "AUTO");
     }
 
-    // Storage Modes (Set default to standalone offline local)
     setStorageMode("local");
     setAutoSave(true);
+
+    return () => {
+      cancelled = true;
+    };
   }, [loggedUsername]);
 
-  // Local storage broadcast listener for instantaneous multi-tab sync on same machine
+  // Mirror the live datasets into local storage so helper components (entry
+  // modal conflict checks, table icon lookups) stay in sync. The database
+  // remains the source of truth.
   useEffect(() => {
-    const syncLocalTabs = (e: StorageEvent) => {
-      if (!loggedUsername) return;
-      if (e.key === "restaurant_reservations" && e.newValue) {
-        try { setGuests(JSON.parse(e.newValue)); } catch (err) { console.error(err); }
-      } else if (e.key === "guest_rsvp_mngr_tables" && e.newValue) {
-        try { setTables(JSON.parse(e.newValue)); } catch (err) { console.error(err); }
-      } else if (e.key === "guest_rsvp_mngr_staff" && e.newValue) {
-        try { setStaffList(JSON.parse(e.newValue)); } catch (err) { console.error(err); }
-      }
-    };
-    window.addEventListener("storage", syncLocalTabs);
-    return () => window.removeEventListener("storage", syncLocalTabs);
-  }, [loggedUsername]);
+    if (!loggedUsername) return;
+    localStorage.setItem("restaurant_reservations", JSON.stringify(guests));
+  }, [guests, loggedUsername]);
+
+  useEffect(() => {
+    if (!loggedUsername) return;
+    localStorage.setItem("guest_rsvp_mngr_tables", JSON.stringify(tables));
+  }, [tables, loggedUsername]);
+
+  useEffect(() => {
+    if (!loggedUsername) return;
+    localStorage.setItem("guest_rsvp_mngr_staff", JSON.stringify(staffList));
+  }, [staffList, loggedUsername]);
 
   // 1. ADD / UPDATE BOOKING ACTION
-  const handleSaveGuest = (savedGuest: Guest) => {
+  const handleSaveGuest = async (savedGuest: Guest) => {
     const exists = guests.some(g => g.id === savedGuest.id);
-    let updatedList: Guest[];
-    if (exists) {
-      updatedList = guests.map(g => (g.id === savedGuest.id ? savedGuest : g));
-      showToast(`✏️ ${savedGuest.name}'s details updated`);
-    } else {
-      updatedList = [savedGuest, ...guests];
-      showToast(`✅ Added reservation for ${savedGuest.name}`);
-    }
-
-    setGuests(updatedList);
-    localStorage.setItem("restaurant_reservations", JSON.stringify(updatedList));
     setIsEntryModalOpen(false);
     setGuestToEdit(null);
+    try {
+      if (exists) {
+        const updated = await updateReservation(savedGuest, loggedUsername || "");
+        setGuests(prev => prev.map(g => (g.id === savedGuest.id ? updated : g)));
+        showToast(`✏️ ${savedGuest.name}'s details updated`);
+      } else {
+        const created = await insertReservation(savedGuest, loggedUsername || "");
+        setGuests(prev => [created, ...prev]);
+        showToast(`✅ Added reservation for ${savedGuest.name}`);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("⚠️ Failed to save booking. Please try again.");
+      setGuests(await loadReservations());
+    }
   };
 
-  const handleUpdateGuestStatus = (id: string, newStatus: RsvpStatus) => {
-    const updatedList = guests.map(g => (g.id === id ? { ...g, status: newStatus } : g));
-    setGuests(updatedList);
-    localStorage.setItem("restaurant_reservations", JSON.stringify(updatedList));
+  const handleUpdateGuestStatus = async (id: string, newStatus: RsvpStatus) => {
+    setGuests(prev => prev.map(g => (g.id === id ? { ...g, status: newStatus } : g)));
     showToast(`⚡ Status updated to: ${newStatus}`);
+    try {
+      await bulkUpdateStatus([id], newStatus);
+    } catch (err) {
+      console.error(err);
+      setGuests(await loadReservations());
+    }
   };
 
   // 2. DELETE BOOKING ACTION
@@ -327,20 +323,28 @@ export default function App() {
       isOpen: true,
       title: "Remove Booking",
       message: `Are you absolutely sure you want to remove the booking for ${target.name}?`,
-      onConfirm: () => {
-        const updatedList = guests.filter(g => g.id !== id);
-        setGuests(updatedList);
-        localStorage.setItem("restaurant_reservations", JSON.stringify(updatedList));
+      onConfirm: async () => {
+        setGuests(prev => prev.filter(g => g.id !== id));
         showToast(`🗑️ ${target.name}'s reservation deleted`);
+        try {
+          await deleteReservation(id);
+        } catch (err) {
+          console.error(err);
+          setGuests(await loadReservations());
+        }
       }
     });
   };
 
-  const handleBulkUpdateGuestStatus = (ids: string[], newStatus: RsvpStatus) => {
-    const updatedList = guests.map(g => ids.includes(g.id) ? { ...g, status: newStatus } : g);
-    setGuests(updatedList);
-    localStorage.setItem("restaurant_reservations", JSON.stringify(updatedList));
+  const handleBulkUpdateGuestStatus = async (ids: string[], newStatus: RsvpStatus) => {
+    setGuests(prev => prev.map(g => ids.includes(g.id) ? { ...g, status: newStatus } : g));
     showToast(`⚡ Bulk updated status of ${ids.length} reservation(s) to: ${newStatus}`);
+    try {
+      await bulkUpdateStatus(ids, newStatus);
+    } catch (err) {
+      console.error(err);
+      setGuests(await loadReservations());
+    }
   };
 
   const handleBulkDeleteGuests = (ids: string[]) => {
@@ -348,11 +352,15 @@ export default function App() {
       isOpen: true,
       title: "Bulk Delete Bookings",
       message: `Are you absolutely sure you want to delete the ${ids.length} selected reservation(s)?`,
-      onConfirm: () => {
-        const updatedList = guests.filter(g => !ids.includes(g.id));
-        setGuests(updatedList);
-        localStorage.setItem("restaurant_reservations", JSON.stringify(updatedList));
+      onConfirm: async () => {
+        setGuests(prev => prev.filter(g => !ids.includes(g.id)));
         showToast(`🗑️ Bulk deleted ${ids.length} reservation(s)`);
+        try {
+          await bulkDeleteReservations(ids);
+        } catch (err) {
+          console.error(err);
+          setGuests(await loadReservations());
+        }
       }
     });
   };
@@ -371,48 +379,60 @@ export default function App() {
   };
 
   // 5. UPDATE GUEST SEATING TABLE DIRECTLY FROM MAP
-  const handleUpdateGuestTableDirect = (guestId: string, tableName: string, forceStatus?: RsvpStatus) => {
-    const updatedList = guests.map(g => {
-      if (g.id === guestId) {
-        return {
-          ...g,
-          table: tableName,
-          status: forceStatus || g.status
-        };
-      }
-      return g;
-    });
-
-    setGuests(updatedList);
-    localStorage.setItem("restaurant_reservations", JSON.stringify(updatedList));
+  const handleUpdateGuestTableDirect = async (guestId: string, tableName: string, forceStatus?: RsvpStatus) => {
+    const target = guests.find(g => g.id === guestId);
+    if (!target) return;
+    const updatedGuest = { ...target, table: tableName, status: forceStatus || target.status };
+    setGuests(prev => prev.map(g => (g.id === guestId ? updatedGuest : g)));
     showToast(`🔗 Assigned table to guest`);
+    try {
+      await updateReservation(updatedGuest, loggedUsername || "");
+    } catch (err) {
+      console.error(err);
+      setGuests(await loadReservations());
+    }
   };
 
   // 6. GENERAL TABLES MANAGER CONF CONFIG SAVE
-  const handleUpdateTableConfig = (newTables: TableConfig[]) => {
+  const handleUpdateTableConfig = async (newTables: TableConfig[]) => {
     setTables(newTables);
-    localStorage.setItem("guest_rsvp_mngr_tables", JSON.stringify(newTables));
     showToast("⚙️ Table deck configurations updated!");
+    try {
+      await replaceTables(newTables);
+    } catch (err) {
+      console.error(err);
+      setTables(await loadTables());
+    }
   };
 
   // 7. CREW MEMBERS CREATION/REMOVAL
-  const handleAddStaff = (name: string) => {
+  const handleAddStaff = async (name: string) => {
     if (staffList.includes(name)) {
       showToast("👤 Staff member name already exists");
       return;
     }
     const updated = [...staffList, name];
     setStaffList(updated);
-    localStorage.setItem("guest_rsvp_mngr_staff", JSON.stringify(updated));
     showToast(`👤 Waiting staff ${name} registered`);
+    try {
+      await replaceStaff(updated);
+    } catch (err) {
+      console.error(err);
+      setStaffList(await loadStaff());
+    }
   };
 
-  const handleRemoveStaff = (index: number) => {
+  const handleRemoveStaff = async (index: number) => {
     const targetName = staffList[index];
     const updated = staffList.filter((_, i) => i !== index);
     setStaffList(updated);
-    localStorage.setItem("guest_rsvp_mngr_staff", JSON.stringify(updated));
     showToast(`🗑️ ${targetName} removed from waitstaff`);
+    try {
+      await replaceStaff(updated);
+    } catch (err) {
+      console.error(err);
+      setStaffList(await loadStaff());
+    }
   };
 
   // 7.5 STORAGE & AUTO-SAVE MANAGEMENT HANDLERS (Simplified offline local fallback)
@@ -440,16 +460,26 @@ export default function App() {
   const handleTestSync = async () => true;
 
   // 7.8 JSON DATABASE BACKUP AND RESTORATION HANDLERS
-  const handleImportGuests = (imported: Guest[]) => {
-    setGuests(imported);
-    localStorage.setItem("restaurant_reservations", JSON.stringify(imported));
-    showToast(`📊 Restore completed: Loaded ${imported.length} reservations!`);
+  const handleImportGuests = async (imported: Guest[]) => {
+    try {
+      const saved = await importReservations(imported, loggedUsername || "");
+      setGuests(saved);
+      showToast(`📊 Restore completed: Loaded ${saved.length} reservations!`);
+    } catch (err) {
+      console.error(err);
+      showToast("⚠️ Restore failed. Please try again.");
+    }
   };
 
-  const handleClearAllGuests = () => {
+  const handleClearAllGuests = async () => {
     setGuests([]);
-    localStorage.setItem("restaurant_reservations", JSON.stringify([]));
     showToast("🧹 Database wiped. Clear reservation logs.");
+    try {
+      await clearAllReservations();
+    } catch (err) {
+      console.error(err);
+      setGuests(await loadReservations());
+    }
   };
 
   // 9. EXPORT RECORD TO CSV CLIENT DOWNLOAD

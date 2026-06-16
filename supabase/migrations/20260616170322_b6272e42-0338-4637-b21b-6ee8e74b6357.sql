@@ -1,0 +1,1 @@
+ALTER TABLE public.reservations ADD COLUMN IF NOT EXISTS is_waitlist boolean NOT NULL DEFAULT false;
