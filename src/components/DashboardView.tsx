@@ -44,14 +44,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 interface DashboardViewProps {
   guests: Guest[];
-  tables?: TableConfig[];
   onEditGuest: (guest: Guest) => void;
   onDeleteGuest: (id: string) => void;
   onUpdateStatus: (id: string, newStatus: RsvpStatus) => void;
   timezone?: string;
+  tables?: TableConfig[];
 }
 
-export default function DashboardView({ guests, tables, onEditGuest, onDeleteGuest, onUpdateStatus, timezone }: DashboardViewProps) {
+export default function DashboardView({ guests, onEditGuest, onDeleteGuest, onUpdateStatus, timezone, tables = [] }: DashboardViewProps) {
   const [chartMetric, setChartMetric] = useState<"breakdown" | "pax">("breakdown");
 
   const getUpcomingWeekData = () => {
@@ -146,20 +146,17 @@ export default function DashboardView({ guests, tables, onEditGuest, onDeleteGue
   };
 
   const getTableIcon = (tableName: string) => {
-    // Prefer the live tables state so icon edits reflect immediately.
-    if (tables && tables.length) {
-      const match = tables.find(t => t.name === tableName);
-      if (match && match.icon) return match.icon;
-    }
+    const match = tables.find(t => t.name === tableName);
+    if (match && match.icon) return match.icon;
     try {
       const cachedTables = localStorage.getItem("guest_rsvp_mngr_tables");
       if (cachedTables) {
         const parsed = JSON.parse(cachedTables);
-        const match = parsed.find((t: any) => t.name === tableName);
-        if (match && match.icon) return match.icon;
+        const m = parsed.find((t: any) => t.name === tableName);
+        if (m && m.icon) return m.icon;
       }
     } catch (e) {}
-    return "🔥";
+    return "🪑";
   };
 
   const todayStr = getTodayString();

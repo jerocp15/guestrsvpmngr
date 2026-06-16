@@ -218,7 +218,7 @@ export default function Sidebar({
             <div className="min-w-0">
               <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest leading-none">Gmail Account</p>
               <h4 className="text-[11px] text-white font-black leading-none mt-1 truncate max-w-[125px]" title={username || "Manager"}>
-                {username ? username : "demo@gmail.com"}
+                {username ? username : "Not signed in"}
               </h4>
             </div>
           </div>
