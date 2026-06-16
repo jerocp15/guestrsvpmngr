@@ -24,5 +24,4 @@ export const clientConfig = {
   apiBaseUrl: getEnv("VITE_API_BASE_URL", ""),
 
   /** Whether the auth/login screen is enabled */
-  authEnabled: getBool("VITE_AUTH_ENABLED", true),
 } as const;
