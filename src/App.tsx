@@ -16,6 +16,22 @@ import { clientConfig } from "./lib/config";
 // Auth
 import { supabase } from "@/integrations/supabase/client";
 
+// Cloud persistence (account-scoped, survives updates / works across devices)
+import {
+  loadReservations,
+  loadTables,
+  loadStaff,
+  insertReservation,
+  updateReservation,
+  deleteReservation,
+  bulkUpdateStatus,
+  bulkDeleteReservations,
+  clearAllReservations,
+  importReservations,
+  replaceTables,
+  replaceStaff,
+} from "./lib/db";
+
 // Specialized Views & Overlays
 import Sidebar from "./components/Sidebar";
 import DashboardView from "./components/DashboardView";
