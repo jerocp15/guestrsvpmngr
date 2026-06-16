@@ -163,7 +163,9 @@ export default function DashboardView({ guests, onEditGuest, onDeleteGuest, onUp
   const todayGuests = guests.filter(g => g.date === todayStr);
 
   // Exclude CANCELLED guests from active schedule sitting/totals
-  const activeTodayGuests = todayGuests.filter(g => g.status !== RsvpStatus.DEPARTED && g.status !== RsvpStatus.CANCELLED);
+  const activeTodayGuests = todayGuests
+    .filter(g => g.status !== RsvpStatus.DEPARTED && g.status !== RsvpStatus.CANCELLED)
+    .sort((a, b) => Number(!!b.isWaitlist) - Number(!!a.isWaitlist));
   const activeTodayWaitlist = activeTodayGuests.filter(g => g.isWaitlist).length;
   const activeTodayReservations = activeTodayGuests.filter(g => g.type === EntryType.RESERVATION && !g.isWaitlist).length;
   const activeTodayWalkins = activeTodayGuests.filter(g => g.type === EntryType.WALK_IN && !g.isWaitlist).length;
@@ -180,19 +182,6 @@ export default function DashboardView({ guests, onEditGuest, onDeleteGuest, onUp
 
 
 
-  // Popular time slots
-  const slots = [
-    { time: "12:00 PM", search: "12:00 PM" },
-    { time: "06:00 PM", search: "06:00 PM" },
-    { time: "07:00 PM", search: "07:00 PM" },
-    { time: "08:00 PM", search: "08:00 PM" }
-  ];
-
-  const slotCounts = slots.map(slot => {
-    const count = todayGuests.filter(g => g.time && g.time.includes(slot.search) && g.status !== RsvpStatus.CANCELLED).length;
-    return { ...slot, count };
-  });
-  const maxSlotCount = Math.max(...slotCounts.map(s => s.count), 1);
 
   const getStatusBadgeClass = (status: RsvpStatus) => {
     switch (status) {
@@ -449,36 +438,8 @@ export default function DashboardView({ guests, onEditGuest, onDeleteGuest, onUp
         </div>
       </div>
 
-      {/* Analytics Bars and Hourly Slots */}
-      <div className="w-full">
-        {/* Popular Slots Card */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-xs">
-          <h4 className="font-serif text-base font-bold text-navy mb-5 uppercase tracking-wide">
-            🕐 Popular Time Slots Today
-          </h4>
-          <div className="space-y-4">
-            {slotCounts.map(slot => {
-              const pct = maxSlotCount > 0 ? (slot.count / maxSlotCount) * 100 : 0;
-              return (
-                <div key={slot.time} className="flex items-center gap-4">
-                  <div className="w-24 text-xs font-semibold text-navy-soft">
-                    {slot.time}
-                  </div>
-                  <div className="flex-1 h-3.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                    <div
-                      className="h-full bg-gold rounded-full transition-all duration-500"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <div className="w-8 text-right text-xs font-bold text-navy">
-                    {slot.count}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+
+
 
       {/* Today's Guests list Card */}
       <div className="bg-white rounded-3xl border border-gray-150 overflow-hidden shadow-xs">

@@ -202,6 +202,9 @@ export default function ReservationsView({
     return matchesDate && matchesType && matchesStatus && matchesQuery;
   });
 
+  // Waitlisted guests always sort to the top of the list
+  filteredGuests.sort((a, b) => Number(!!b.isWaitlist) - Number(!!a.isWaitlist));
+
   const totalPax = filteredGuests.filter(g => g.status !== RsvpStatus.CANCELLED).reduce((sum, g) => sum + (g.pax || 0), 0);
 
   // Pagination calculations for performance on 10,000+ guest records
