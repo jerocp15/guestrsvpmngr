@@ -460,16 +460,26 @@ export default function App() {
   const handleTestSync = async () => true;
 
   // 7.8 JSON DATABASE BACKUP AND RESTORATION HANDLERS
-  const handleImportGuests = (imported: Guest[]) => {
-    setGuests(imported);
-    localStorage.setItem("restaurant_reservations", JSON.stringify(imported));
-    showToast(`📊 Restore completed: Loaded ${imported.length} reservations!`);
+  const handleImportGuests = async (imported: Guest[]) => {
+    try {
+      const saved = await importReservations(imported, loggedUsername || "");
+      setGuests(saved);
+      showToast(`📊 Restore completed: Loaded ${saved.length} reservations!`);
+    } catch (err) {
+      console.error(err);
+      showToast("⚠️ Restore failed. Please try again.");
+    }
   };
 
-  const handleClearAllGuests = () => {
+  const handleClearAllGuests = async () => {
     setGuests([]);
-    localStorage.setItem("restaurant_reservations", JSON.stringify([]));
     showToast("🧹 Database wiped. Clear reservation logs.");
+    try {
+      await clearAllReservations();
+    } catch (err) {
+      console.error(err);
+      setGuests(await loadReservations());
+    }
   };
 
   // 9. EXPORT RECORD TO CSV CLIENT DOWNLOAD
